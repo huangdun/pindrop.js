@@ -2,8 +2,8 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig(({ command }) => ({
-  // Dev server serves demo/index.html; library build does not use this root
-  root: command === 'serve' ? 'demo' : undefined,
+  // Dev server serves playground/index.html; library build does not use this root
+  root: command === 'serve' ? 'playground' : undefined,
   publicDir: false,
   build: {
     lib: {
