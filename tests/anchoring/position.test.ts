@@ -13,6 +13,7 @@ describe('createAnchor', () => {
       left: 100, top: 200, width: 400, height: 300,
       right: 500, bottom: 500, x: 100, y: 200, toJSON() { },
     });
+    container.getClientRects = () => [{ ...container.getBoundingClientRect(), item: () => null, length: 1 } as unknown as DOMRectList];
   });
 
   afterEach(() => {
@@ -44,6 +45,7 @@ describe('resolveAnchorPosition', () => {
       left: 100, top: 200, width: 400, height: 300,
       right: 500, bottom: 500, x: 100, y: 200, toJSON() { },
     });
+    container.getClientRects = () => [{ ...container.getBoundingClientRect(), item: () => null, length: 1 } as unknown as DOMRectList];
   });
 
   afterEach(() => {
@@ -58,6 +60,7 @@ describe('resolveAnchorPosition', () => {
     expect(pos.x).toBeCloseTo(300, -1);
     expect(pos.y).toBeCloseTo(350, -1);
     expect(pos.anchored).toBe(true);
+    expect(pos.visible).toBe(true);
   });
 
   it('falls back to viewport position when selector not found', () => {
@@ -66,5 +69,14 @@ describe('resolveAnchorPosition', () => {
     expect(pos.x).toBe(window.innerWidth * 0.3);
     expect(pos.y).toBe(window.innerHeight * 0.4);
     expect(pos.anchored).toBe(false);
+    expect(pos.visible).toBe(true);
+  });
+
+  it('marks hidden resolved anchors as not visible', () => {
+    container.style.display = 'none';
+    const anchor = { selector: '#resolve-test', offsetX: 0.5, offsetY: 0.5, viewportX: 0.5, viewportY: 0.5 };
+    const pos = resolveAnchorPosition(anchor);
+    expect(pos.anchored).toBe(true);
+    expect(pos.visible).toBe(false);
   });
 });
