@@ -13,7 +13,13 @@ export class PinRenderer {
   constructor(
     private container: HTMLDivElement,
     private store: Store,
-    private options: { zIndex: number; onPinClick: (commentId: string) => void }
+    private options: { 
+      zIndex: number; 
+      onPinClick: (commentId: string) => void;
+      onPinMove?: (commentId: string, clientX: number, clientY: number, pageX: number, pageY: number) => void;
+      onPinDragStart?: (commentId: string) => void;
+      onPinDragEnd?: (commentId: string) => void;
+    }
   ) { }
 
   setShadowHost(host: HTMLElement): void {
@@ -75,6 +81,7 @@ export class PinRenderer {
       user-select:none !important;
       z-index:${this.options.zIndex} !important;
       opacity:${comment.resolved ? '0.4' : '1'} !important;
+      touch-action:none !important;
     `;
     pin.innerHTML = pinSvgHtml(color, number, textColor);
     pin.dataset.commentId = comment.id;
@@ -87,10 +94,67 @@ export class PinRenderer {
     pin.addEventListener('mouseleave', () => {
       this.hideTooltip();
     });
-    pin.addEventListener('click', (e) => {
+
+    let startX = 0, startY = 0;
+    let isDragging = false;
+    let dragHasMoved = false;
+
+    pin.addEventListener('pointerdown', (e) => {
       e.stopPropagation();
-      this.hideTooltip();
-      this.options.onPinClick(comment.id);
+      e.preventDefault();
+      startX = e.clientX;
+      startY = e.clientY;
+      isDragging = true;
+      dragHasMoved = false;
+      // Inject a global cursor override so the grabbing cursor wins over the overlay's cursor
+      const grabStyle = document.createElement('style');
+      grabStyle.id = '__pindrop-drag-cursor';
+      grabStyle.textContent = '*, *::before, *::after { cursor: grabbing !important; }';
+      document.head.appendChild(grabStyle);
+
+      const onPointerMove = (moveEvent: PointerEvent) => {
+        if (!isDragging) return;
+        const dx = Math.abs(moveEvent.clientX - startX);
+        const dy = Math.abs(moveEvent.clientY - startY);
+        // Only trigger drag if they move the mouse more than 3 pixels
+        if (dx > 3 || dy > 3) {
+          dragHasMoved = true;
+          if (!pin.dataset.dragStarted) {
+            pin.dataset.dragStarted = '1';
+            this.options.onPinDragStart?.(comment.id);
+          }
+          this.hideTooltip();
+          // Adjust physical layout immediately so the user feels the drag natively
+          pin.style.setProperty('left', `${moveEvent.pageX}px`, 'important');
+          pin.style.setProperty('top', `${moveEvent.pageY}px`, 'important');
+          // Make pin invisible to hit-testing so document.elementsFromPoint goes thru it!
+          pin.style.setProperty('pointer-events', 'none', 'important');
+        }
+      };
+
+      const onPointerUp = (upEvent: PointerEvent) => {
+        if (!isDragging) return;
+        isDragging = false;
+        document.getElementById('__pindrop-drag-cursor')?.remove();
+        document.body.style.removeProperty('cursor');
+        delete pin.dataset.dragStarted;
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', onPointerUp);
+        pin.style.setProperty('pointer-events', 'auto', 'important');
+
+        if (dragHasMoved) {
+          if (this.options.onPinMove) {
+            this.options.onPinMove(comment.id, upEvent.clientX, upEvent.clientY, upEvent.pageX, upEvent.pageY);
+          }
+          this.options.onPinDragEnd?.(comment.id);
+        } else {
+          this.hideTooltip();
+          this.options.onPinClick(comment.id);
+        }
+      };
+
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
     });
 
     this.container.appendChild(pin);

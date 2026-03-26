@@ -30,6 +30,14 @@ export class Store {
     this.persist();
   }
 
+  moveAnchor(id: string, anchor: import('./types').Anchor): void {
+    const comment = this.comments.get(id);
+    if (!comment) return;
+    comment.anchor = anchor;
+    comment.updatedAt = new Date().toISOString();
+    this.persist();
+  }
+
   resolveComment(id: string, resolvedBy: string): void {
     const comment = this.comments.get(id);
     if (!comment) return;

@@ -17,6 +17,7 @@ export class KeyboardHandler {
     this.handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (this.isInputElement(target)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
 
       switch (e.key) {
         case 'v':

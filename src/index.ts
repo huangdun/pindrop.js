@@ -39,6 +39,7 @@ class PindropLayer {
   private newCommentEl: HTMLDivElement | null = null;
   private newCommentAnchor: ReturnType<typeof createAnchor> | null = null;
   private sidebarSide: 'left' | 'right' = 'right';
+  private _dragWasPopoverOpen = false;
 
   constructor(opts: PindropOptions = {}) {
     this.options = {
@@ -92,6 +93,34 @@ class PindropLayer {
     this.pinRenderer = new PinRenderer(this.container.pinContainer, this.store, {
       zIndex: this.options.zIndex,
       onPinClick: (commentId) => this.onPinClick(commentId),
+      onPinMove: (commentId, clientX, clientY, pageX, pageY) => {
+        // Find the element at the drop point (pin has pointer-events:none so it won't be hit)
+        const els = document.elementsFromPoint(clientX, clientY);
+        // Skip pindrop's own UI elements
+        const target = els.find(el => !this.container.root.contains(el)) as HTMLElement | undefined;
+        if (!target) return;
+        const newAnchor = createAnchor(target, pageX, pageY);
+        this.store.moveAnchor(commentId, newAnchor);
+        this.refreshUI();
+      },
+      onPinDragStart: (commentId) => {
+        // Remember if this pin's popover was open before the drag
+        this._dragWasPopoverOpen = this.popover.getCurrentCommentId() === commentId;
+        this.popover.hide();
+      },
+      onPinDragEnd: (commentId) => {
+        // Only re-open the popover if it was open before the drag started
+        if (this._dragWasPopoverOpen) {
+          const comment = this.store.getComment(commentId);
+          if (comment) {
+            const pos = resolveAnchorPosition(comment.anchor);
+            this.popover.show(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
+            this.pinRenderer.setActiveComment(commentId);
+            this.sidebar.setActiveComment(commentId);
+          }
+        }
+        this._dragWasPopoverOpen = false;
+      },
     });
     this.pinRenderer.setShadowHost(this.container.root);
 
