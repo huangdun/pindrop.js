@@ -3,6 +3,8 @@ export interface PindropStorageAdapter {
   save(comments: Comment[]): Promise<void> | void;
 }
 
+export type CommentScope = Record<string, unknown>;
+
 export interface PindropOptions {
   user?: { name: string };
   zIndex?: number;
@@ -12,6 +14,8 @@ export interface PindropOptions {
   styles?: Record<string, string>;
   storageKey?: string;
   adapter?: PindropStorageAdapter;
+  getScope?: (element: Element) => CommentScope | undefined;
+  isScopeActive?: (scope: CommentScope) => boolean;
 }
 
 export interface Anchor {
@@ -33,6 +37,7 @@ export interface Reply {
 export interface Comment {
   id: string;
   anchor: Anchor;
+  scope?: CommentScope;
   author: string;
   text: string;
   createdAt: string;

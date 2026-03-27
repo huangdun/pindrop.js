@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Store } from '../../src/core/store';
 import { EventEmitter } from '../../src/core/events';
-import type { Comment, Anchor } from '../../src/core/types';
+import type { Comment, Anchor, CommentScope } from '../../src/core/types';
 
 function makeAnchor(): Anchor {
   return { selector: '#test', offsetX: 0.5, offsetY: 0.5, viewportX: 0.5, viewportY: 0.5 };
@@ -93,6 +93,15 @@ describe('Store', () => {
     store.addReply(comment.id, reply);
     expect(store.getComment(comment.id)!.replies).toHaveLength(1);
     expect(listener).toHaveBeenCalledWith({ comment: expect.any(Object), reply });
+  });
+
+  it('updates scope when moving an anchor', () => {
+    const comment = makeComment();
+    const newAnchor = makeAnchor();
+    const scope: CommentScope = { view: 'checkout' };
+    store.addComment(comment);
+    store.moveAnchor(comment.id, newAnchor, scope);
+    expect(store.getComment(comment.id)!.scope).toEqual(scope);
   });
 
   it('replaceAll sets all comments at once', () => {

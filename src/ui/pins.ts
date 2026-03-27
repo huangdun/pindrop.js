@@ -53,9 +53,8 @@ export class PinRenderer {
     return PIN_READ;
   }
 
-  renderAll(): void {
+  renderAll(comments = this.store.getComments()): void {
     this.clear();
-    const comments = this.store.getComments();
     comments.forEach((comment, index) => {
       this.renderPin(comment, index + 1);
     });

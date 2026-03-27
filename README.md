@@ -100,6 +100,27 @@ pindrop.addComment({
 pindrop.resolveComment('comment-1234', 'QA Bot');
 \`\`\`
 
+### Scope Comments To Views Or Page States
+If your app reuses selectors across routes, tabs, or stateful screens, you can optionally attach scope metadata to each comment when it is created and decide whether that scope is currently active.
+
+\`\`\`javascript
+let activeScreen = 'checkout';
+
+const pindrop = new PindropLayer({
+  getScope: (element) => {
+    const screen = element.closest('[data-screen]')?.getAttribute('data-screen');
+    return screen ? { screen } : undefined;
+  },
+  isScopeActive: (scope) => scope.screen === activeScreen,
+});
+
+// Later, when your app changes screens/state:
+activeScreen = 'confirmation';
+pindrop.refresh();
+\`\`\`
+
+Scoped comments only render when `isScopeActive(scope)` returns `true`. Unscoped legacy comments still render normally, and comments attached to hidden elements are automatically suppressed. Call `pindrop.refresh()` after your app switches routes or UI states so the overlay can re-evaluate visibility.
+
 ### The `pindrop-cli` Export Terminal
 Convert offline JSON exports into readable Markdown reports straight from your terminal.
 

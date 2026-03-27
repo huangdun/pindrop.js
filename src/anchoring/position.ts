@@ -1,10 +1,12 @@
 import type { Anchor } from '../core/types';
 import { generateSelector } from './selector';
+import { isElementVisible } from '../core/visibility';
 
 export interface ResolvedPosition {
   x: number;
   y: number;
   anchored: boolean;
+  visible: boolean;
 }
 
 export function createAnchor(element: Element, pageX: number, pageY: number): Anchor {
@@ -32,6 +34,7 @@ export function resolveAnchorPosition(anchor: Anchor): ResolvedPosition {
       x: rect.left + window.scrollX + rect.width * anchor.offsetX,
       y: rect.top + window.scrollY + rect.height * anchor.offsetY,
       anchored: true,
+      visible: isElementVisible(el),
     };
   }
 
@@ -40,5 +43,6 @@ export function resolveAnchorPosition(anchor: Anchor): ResolvedPosition {
     x: window.innerWidth * anchor.viewportX,
     y: window.innerHeight * anchor.viewportY,
     anchored: false,
+    visible: true,
   };
 }

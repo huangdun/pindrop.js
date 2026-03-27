@@ -35,6 +35,9 @@ export function validatePindropData(data: unknown): PindropData {
     if (typeof comment.text !== 'string') {
       throw new Error(`Invalid comment ${comment.id}: missing text`);
     }
+    if ('scope' in comment && (comment.scope === null || typeof comment.scope !== 'object' || Array.isArray(comment.scope))) {
+      throw new Error(`Invalid comment ${comment.id}: invalid scope`);
+    }
   }
 
   return {

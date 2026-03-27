@@ -1,6 +1,7 @@
-import type { PindropOptions, PindropEvent, PindropEventMap, PindropMode, Comment, ImportResult } from './core/types';
+import type { PindropOptions, PindropEvent, PindropEventMap, PindropMode, Comment, ImportResult, CommentScope } from './core/types';
 import { EventEmitter } from './core/events';
 import { Store } from './core/store';
+import { filterVisibleComments, getCommentVisibility } from './core/visibility';
 import { createContainer, destroyContainer, type ContainerElements } from './ui/container';
 import { PinRenderer } from './ui/pins';
 import { Toolbar } from './ui/toolbar';
@@ -38,6 +39,7 @@ class PindropLayer {
   private savedOutline = '';
   private newCommentEl: HTMLDivElement | null = null;
   private newCommentAnchor: ReturnType<typeof createAnchor> | null = null;
+  private newCommentScope: CommentScope | undefined;
   private sidebarSide: 'left' | 'right' = 'right';
   private _dragWasPopoverOpen = false;
 
@@ -81,7 +83,7 @@ class PindropLayer {
     window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', () => {
       if (this.themePref === 'auto') {
         applyTheme(this.container.root, detectTheme('auto'), this.options.styles);
-        this.pinRenderer?.renderAll();
+        this.pinRenderer?.renderAll(this.getVisibleComments());
       }
     });
 
@@ -100,7 +102,7 @@ class PindropLayer {
         const target = els.find(el => !this.container.root.contains(el)) as HTMLElement | undefined;
         if (!target) return;
         const newAnchor = createAnchor(target, pageX, pageY);
-        this.store.moveAnchor(commentId, newAnchor);
+        this.store.moveAnchor(commentId, newAnchor, this.options.getScope?.(target));
         this.refreshUI();
       },
       onPinDragStart: (commentId) => {
@@ -182,7 +184,10 @@ class PindropLayer {
     this.keyboard.attach();
 
     // Tracker
-    this.tracker = new AnchorTracker(this.store, this.events, this.pinRenderer, () => this.updatePopoverPositions());
+    this.tracker = new AnchorTracker(this.store, this.events, this.pinRenderer, () => {
+      this.refreshUI();
+      this.updatePopoverPositions();
+    });
     this.tracker.start();
 
     // Overlay handlers for comment placement + hover highlight
@@ -246,6 +251,7 @@ class PindropLayer {
     const comment: Comment = {
       id: crypto.randomUUID(),
       anchor,
+      scope: this.options.getScope?.(el),
       author: options.author || this.currentUser || 'Automated Agent',
       text: options.text,
       createdAt: now,
@@ -274,7 +280,7 @@ class PindropLayer {
       createdAt: now,
       updatedAt: now,
     });
-    this.sidebar.update(this.store.getComments());
+    this.sidebar.update(this.getVisibleComments());
 
     if (this.popover.getCurrentCommentId() === options.commentId) {
       const pos = resolveAnchorPosition(parent.anchor);
@@ -284,6 +290,19 @@ class PindropLayer {
 
   getComments(): Comment[] {
     return this.store.getComments();
+  }
+
+  refresh(): void {
+    this.refreshUI();
+    this.updatePopoverPositions();
+  }
+
+  private getVisibleComments(): Comment[] {
+    return filterVisibleComments(this.store.getComments(), this.options);
+  }
+
+  private isCommentVisible(comment: Comment): boolean {
+    return getCommentVisibility(comment, this.options).visible;
   }
 
   resolveComment(commentId: string, author?: string): void {
@@ -299,9 +318,15 @@ class PindropLayer {
     
     if (this.popover.getCurrentCommentId() === commentId) {
       const comment = this.store.getComment(commentId)!;
-      const pos = resolveAnchorPosition(comment.anchor);
-      this.popover.show(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
-      this.pinRenderer.setActiveComment(commentId);
+      if (this.isCommentVisible(comment)) {
+        const pos = resolveAnchorPosition(comment.anchor);
+        this.popover.show(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
+        this.pinRenderer.setActiveComment(commentId);
+      } else {
+        this.popover.hide();
+        this.pinRenderer.setActiveComment(null);
+        this.sidebar.setActiveComment(null);
+      }
     }
   }
 
@@ -405,10 +430,10 @@ class PindropLayer {
     const anchor = createAnchor(target as Element, pageX, pageY);
 
     // Show comment input popover
-    this.showNewCommentPopover(anchor, { x: e.clientX, y: e.clientY });
+    this.showNewCommentPopover(anchor, target as Element, { x: e.clientX, y: e.clientY });
   }
 
-  private showNewCommentPopover(anchor: ReturnType<typeof createAnchor>, position: { x: number; y: number }): void {
+  private showNewCommentPopover(anchor: ReturnType<typeof createAnchor>, target: Element, position: { x: number; y: number }): void {
     this.popover.hide();
     this.dismissNewComment();
 
@@ -434,7 +459,7 @@ class PindropLayer {
     pin.className = 'pindrop-new-pin';
     pin.style.left = `${position.x}px`;
     pin.style.top = `${position.y}px`;
-    pin.innerHTML = pinSvgHtml(PIN_COLOR, this.store.getComments().length + 1);
+    pin.innerHTML = pinSvgHtml(PIN_COLOR, this.getVisibleComments().length + 1);
 
     // Comment box — position left or right of pin based on space
     const box = document.createElement('div');
@@ -480,6 +505,7 @@ class PindropLayer {
       const comment: Comment = {
         id: crypto.randomUUID(),
         anchor,
+        scope: this.newCommentScope,
         author: this.currentUser!,
         text: textarea.value.trim(),
         createdAt: now,
@@ -521,6 +547,7 @@ class PindropLayer {
     this.container.shadowContent.appendChild(wrapper);
     this.newCommentEl = wrapper;
     this.newCommentAnchor = anchor;
+    this.newCommentScope = this.options.getScope?.(target);
     textarea.focus();
   }
 
@@ -529,6 +556,7 @@ class PindropLayer {
       this.newCommentEl.remove();
       this.newCommentEl = null;
       this.newCommentAnchor = null;
+      this.newCommentScope = undefined;
 
       // Restore the shadow host to 0x0
       this.container.root.style.width = '0';
@@ -553,6 +581,10 @@ class PindropLayer {
 
     const comment = this.store.getComment(commentId);
     if (!comment) return;
+    if (!this.isCommentVisible(comment)) {
+      this.refreshUI();
+      return;
+    }
 
     // Dismiss any in-progress new comment
     this.dismissNewComment();
@@ -561,8 +593,8 @@ class PindropLayer {
     // Mark as read when opening
     if (comment.unread) {
       this.store.markRead(commentId);
-      this.pinRenderer.renderAll();
-      this.sidebar.update(this.store.getComments());
+      this.pinRenderer.renderAll(this.getVisibleComments());
+      this.sidebar.update(this.getVisibleComments());
     }
 
     const pos = resolveAnchorPosition(comment.anchor);
@@ -574,6 +606,10 @@ class PindropLayer {
   private onSidebarCommentClick(commentId: string): void {
     const comment = this.store.getComment(commentId);
     if (!comment) return;
+    if (!this.isCommentVisible(comment)) {
+      this.refreshUI();
+      return;
+    }
 
     const pos = resolveAnchorPosition(comment.anchor);
     // Scroll into view
@@ -607,7 +643,7 @@ class PindropLayer {
       const pos = resolveAnchorPosition(comment.anchor);
       this.popover.show(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
     }
-    this.sidebar.update(this.store.getComments());
+    this.sidebar.update(this.getVisibleComments());
   }
 
   private async handleResolveComment(commentId: string): Promise<void> {
@@ -641,7 +677,7 @@ class PindropLayer {
 
   private editComment(commentId: string, text: string): void {
     this.store.editComment(commentId, text);
-    this.sidebar.update(this.store.getComments());
+    this.sidebar.update(this.getVisibleComments());
   }
 
   private editReply(commentId: string, replyId: string, text: string): void {
@@ -665,7 +701,7 @@ class PindropLayer {
   }
 
   private navigatePin(direction: number): void {
-    const comments = this.store.getComments();
+    const comments = this.getVisibleComments();
     if (comments.length === 0) return;
 
     this.currentPinIndex += direction;
@@ -750,14 +786,24 @@ class PindropLayer {
     } catch {}
     
     applyTheme(this.container.root, detectTheme(pref), this.options.styles);
-    this.pinRenderer?.renderAll();
+    this.pinRenderer?.renderAll(this.getVisibleComments());
   }
 
   private refreshUI(): void {
-    const comments = this.store.getComments();
-    this.pinRenderer.renderAll();
+    const comments = this.getVisibleComments();
+    this.pinRenderer.renderAll(comments);
     this.sidebar.update(comments);
     this.toolbar.setCommentCount(comments.length);
+
+    const activeCommentId = this.popover.getCurrentCommentId();
+    if (activeCommentId) {
+      const activeComment = this.store.getComment(activeCommentId);
+      if (!activeComment || !this.isCommentVisible(activeComment)) {
+        this.popover.hide();
+        this.pinRenderer.setActiveComment(null);
+        this.sidebar.setActiveComment(null);
+      }
+    }
   }
 
   private updatePopoverPositions(): void {
@@ -765,9 +811,13 @@ class PindropLayer {
     const commentId = this.popover.getCurrentCommentId();
     if (commentId) {
       const comment = this.store.getComment(commentId);
-      if (comment) {
+      if (comment && this.isCommentVisible(comment)) {
         const pos = resolveAnchorPosition(comment.anchor);
         this.popover.updatePosition({ x: pos.x - window.scrollX, y: pos.y - window.scrollY });
+      } else {
+        this.popover.hide();
+        this.pinRenderer.setActiveComment(null);
+        this.sidebar.setActiveComment(null);
       }
     }
 
@@ -803,4 +853,4 @@ export const Pindrop = {
   },
 };
 
-export type { PindropOptions, PindropMode, Comment, ImportResult, PindropEvent, PindropEventMap };
+export type { PindropOptions, PindropMode, Comment, CommentScope, ImportResult, PindropEvent, PindropEventMap };

@@ -15,7 +15,7 @@ export class KeyboardHandler {
 
   attach(): void {
     this.handler = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
+      const target = e.target;
       if (this.isInputElement(target)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
 
@@ -62,8 +62,12 @@ export class KeyboardHandler {
     }
   }
 
-  private isInputElement(el: HTMLElement): boolean {
-    const tag = el.tagName.toLowerCase();
-    return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable;
+  private isInputElement(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+
+    const tag = target.tagName.toLowerCase();
+    return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable;
   }
 }

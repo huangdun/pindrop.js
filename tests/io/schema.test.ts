@@ -40,4 +40,30 @@ describe('validatePindropData', () => {
     const data = { ...validData, comments: [{ id: 'c1', text: 'hi' }] };
     expect(() => validatePindropData(data)).toThrow('missing anchor');
   });
+
+  it('accepts comments with optional scope metadata', () => {
+    const data = {
+      ...validData,
+      comments: [{
+        id: 'c1',
+        text: 'hi',
+        anchor: { selector: '#x', offsetX: 0.5, offsetY: 0.5, viewportX: 0.5, viewportY: 0.5 },
+        scope: { view: 'checkout' },
+      }],
+    };
+    expect(() => validatePindropData(data)).not.toThrow();
+  });
+
+  it('rejects invalid scope metadata', () => {
+    const data = {
+      ...validData,
+      comments: [{
+        id: 'c1',
+        text: 'hi',
+        anchor: { selector: '#x', offsetX: 0.5, offsetY: 0.5, viewportX: 0.5, viewportY: 0.5 },
+        scope: 'checkout',
+      }],
+    };
+    expect(() => validatePindropData(data)).toThrow('invalid scope');
+  });
 });
