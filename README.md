@@ -121,11 +121,6 @@ pindrop.refresh();
 
 Scoped comments only render when `isScopeActive(scope)` returns `true`. Unscoped legacy comments still render normally, and comments attached to hidden elements (e.g., in a hidden tab or modal) are automatically suppressed. Call `pindrop.refresh()` after your app switches routes or UI states so the overlay can re-evaluate visibility.
 
-### Custom Subdomains (JS.ORG)
-Pindrop is pre-configured to work with a `pindrop.js.org` subdomain. To set this up:
-1.  Connect your repository's GitHub Pages or Vercel site.
-2.  Follow the instructions at [js.org](https://js.org) to apply for the subdomain.
-
 ### The `pindrop-cli` Export Terminal
 Convert offline JSON exports into readable Markdown reports straight from your terminal.
 
