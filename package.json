@@ -12,6 +12,7 @@
       "require": "./dist/pindrop.umd.js",
       "types": "./dist/index.d.ts"
     },
+    "./style.css": "./dist/style.css",
     "./dist/style.css": "./dist/style.css"
   },
   "author": "Dun Huang",

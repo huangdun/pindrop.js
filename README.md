@@ -34,11 +34,11 @@ npm install pindrop.js
 Drop Pindrop into the root of your frontend application:
 
 \`\`\`javascript
-import { PindropLayer } from 'pindrop.js';
+import { Pindrop } from 'pindrop.js';
 import 'pindrop.js/dist/style.css'; // Don't forget the CSS!
 
 // Initialize Pindrop
-const pindrop = new PindropLayer({
+const pindrop = Pindrop.init({
   storageKey: 'my-app-feedback', // LocalStorage prefix key
   theme: 'auto', // 'light' | 'dark' | 'auto'
 });
@@ -54,7 +54,7 @@ You're done! Hit the `c` key to enter **Comment Mode**, click anywhere on the pa
 To upgrade Pindrop from offline-only to a fully synced collaborative tool, provide an `adapter` in the options.
 
 \`\`\`javascript
-const pindrop = new PindropLayer({
+const pindrop = Pindrop.init({
   adapter: {
     load: async () => {
       // Fetch the comments from your backend API
@@ -106,7 +106,7 @@ If your app reuses selectors across routes, tabs, or stateful screens, you can o
 \`\`\`javascript
 let activeScreen = 'checkout';
 
-const pindrop = new PindropLayer({
+const pindrop = Pindrop.init({
   getScope: (element) => {
     const screen = element.closest('[data-screen]')?.getAttribute('data-screen');
     return screen ? { screen } : undefined;
@@ -119,7 +119,12 @@ activeScreen = 'confirmation';
 pindrop.refresh();
 \`\`\`
 
-Scoped comments only render when `isScopeActive(scope)` returns `true`. Unscoped legacy comments still render normally, and comments attached to hidden elements are automatically suppressed. Call `pindrop.refresh()` after your app switches routes or UI states so the overlay can re-evaluate visibility.
+Scoped comments only render when `isScopeActive(scope)` returns `true`. Unscoped legacy comments still render normally, and comments attached to hidden elements (e.g., in a hidden tab or modal) are automatically suppressed. Call `pindrop.refresh()` after your app switches routes or UI states so the overlay can re-evaluate visibility.
+
+### Custom Subdomains (JS.ORG)
+Pindrop is pre-configured to work with a `pindrop.js.org` subdomain. To set this up:
+1.  Connect your repository's GitHub Pages or Vercel site.
+2.  Follow the instructions at [js.org](https://js.org) to apply for the subdomain.
 
 ### The `pindrop-cli` Export Terminal
 Convert offline JSON exports into readable Markdown reports straight from your terminal.

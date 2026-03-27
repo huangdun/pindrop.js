@@ -1,4 +1,5 @@
 import type { PindropOptions, PindropEvent, PindropEventMap, PindropMode, Comment, ImportResult, CommentScope } from './core/types';
+import './styles/styles.css';
 import { EventEmitter } from './core/events';
 import { Store } from './core/store';
 import { filterVisibleComments, getCommentVisibility } from './core/visibility';
