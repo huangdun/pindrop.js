@@ -12,14 +12,76 @@
       font-family: 'Inter', system-ui, sans-serif;
       max-width: 960px;
       margin: 0 auto;
-      padding: 2rem;
+      padding: 0 2rem 5rem;
       color: #1a1a1a;
       line-height: 1.6;
       background: #fafafa;
     }
+    header {
+      padding: 2rem 0;
+      background: #fafafa;
+      z-index: 10;
+    }
     h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
     h2 { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.75rem; }
-    .subtitle { color: #666; font-size: 1rem; margin-bottom: 2rem; }
+    .subtitle { color: #666; font-size: 1rem; margin-bottom: 1rem; }
+    
+    /* Tabs Navigation */
+    .tabs-nav {
+      display: flex;
+      gap: 1rem;
+      border-bottom: 1px solid #e0e0e0;
+      margin: 2rem 0 1.5rem;
+    }
+    .tab-btn {
+      padding: 0.75rem 1rem;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #666;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #000; }
+    .tab-btn.active {
+      color: #0070f3;
+      border-bottom-color: #0070f3;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Visibility Controls */
+    .controls-panel {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .control-group { display: flex; align-items: center; gap: 0.5rem; }
+    .control-label { font-size: 0.75rem; font-weight: 600; color: #888; text-transform: uppercase; }
+    .btn-toggle {
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #fff;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-toggle:hover { background: #f0f0f0; }
+    .btn-toggle.active {
+      background: #ffebee;
+      color: #d32f2f;
+      border-color: #ef9a9a;
+    }
+
     .card {
       border: 1px solid #e0e0e0;
       border-radius: 12px;
@@ -27,7 +89,11 @@
       margin: 1rem 0;
       background: #fff;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: opacity 0.3s;
     }
+    .card.is-hidden { visibility: hidden; pointer-events: none; opacity: 0.3; }
+    
+    /* Existing styles continue... */
     .chart-placeholder {
       background: #f5f5f5;
       height: 200px;
@@ -72,73 +138,111 @@
   </style>
 </head>
 <body>
-  <h1 id="page-title">pindrop.js playground</h1>
-  <p class="subtitle">Minimal test bench for development. Click the toolbar at the bottom to enter <strong>Comment</strong> mode, then click anything to pin a comment.</p>
+  <header>
+    <h1 id="page-title">pindrop.js playground</h1>
+    <p class="subtitle">Click the toolbar at the bottom to enter <strong>Comment</strong> mode.</p>
+    
+    <div class="tabs-nav">
+      <button class="tab-btn active" data-tab="tab-dashboard">Dashboard</button>
+      <button class="tab-btn" data-tab="tab-details">Details</button>
+      <button class="tab-btn" data-tab="tab-settings">Settings</button>
+    </div>
+  </header>
+
+  <div class="controls-panel">
+    <div class="control-label">Visibility Test:</div>
+    <div class="control-group">
+      <button class="btn-toggle" id="toggle-display">Hide Section (display: none)</button>
+      <button class="btn-toggle" id="toggle-visibility">Hide Section (visibility: hidden)</button>
+    </div>
+  </div>
+
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="card" id="overview">
+      <h2>Overview Section</h2>
+      <p>This is the main dashboard view. Try pinning comments here, then switch tabs.</p>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-value">2,847</div>
+          <div class="metric-label">Active Users</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">94%</div>
+          <div class="metric-label">Satisfaction</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">$12.4k</div>
+          <div class="metric-label">Revenue</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="chart">
+      <h2>Chart Section</h2>
+      <div class="chart-placeholder">[ Chart placeholder — use buttons above to toggle visibility ]</div>
+    </div>
+  </div>
+
+  <div id="tab-details" class="tab-content">
+    <div class="card" id="details">
+      <h2>Data Table</h2>
+      <table id="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Feature</th>
+            <th>Status</th>
+            <th>Priority</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Pin placement</td><td><span class="badge badge-green">Done</span></td><td>P0</td></tr>
+          <tr><td>2</td><td>Threaded replies</td><td><span class="badge badge-green">Done</span></td><td>P0</td></tr>
+          <tr><td>3</td><td>JSON export/import</td><td><span class="badge badge-green">Done</span></td><td>P1</td></tr>
+          <tr><td>4</td><td>Merge algorithm</td><td><span class="badge badge-green">Done</span></td><td>P1</td></tr>
+          <tr><td>5</td><td>Real-time sync</td><td><span class="badge badge-orange">Not in v1</span></td><td>P3</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="tab-settings" class="tab-content">
+    <div class="card" id="settings">
+      <h2>Project Settings</h2>
+      <p>Configure how pindrop behaves on this page.</p>
+      <div style="margin-top: 1rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">Project Name</label>
+        <input type="text" value="Pindrop Next" style="width: 100%; padding: 0.5rem; border: 1px solid #e0e0e0; border-radius: 4px;">
+      </div>
+      <div style="margin-top: 1rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">Storage Strategy</label>
+        <select style="width: 100%; padding: 0.5rem; border: 1px solid #e0e0e0; border-radius: 4px;">
+          <option>LocalStorage (Default)</option>
+          <option>SessionStorage</option>
+          <option>InMemory</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="footer-section">
+    <h2>Technical Features</h2>
+    <ul id="feature-list">
+      <li>DOM-based visibility tracking (pins hide when parent is invisible)</li>
+      <li>Shadow DOM isolation for clean styles</li>
+      <li>Element-relative anchoring</li>
+      <li>Keyboard shortcuts (C, V, R, [, ])</li>
+    </ul>
+  </div>
 
   <div class="tips">
     <h3>⌨️ Keyboard shortcuts</h3>
     <ul>
       <li><strong>C</strong> — Enter comment mode</li>
-      <li><strong>V</strong> — Enter view mode (default)</li>
-      <li><strong>R</strong> — Enter review mode (opens sidebar)</li>
+      <li><strong>V</strong> — Enter view mode</li>
+      <li><strong>R</strong> — Enter review mode (sidebar)</li>
       <li><strong>Esc</strong> — Exit mode / close popover</li>
       <li><strong>] / [</strong> — Navigate between pins</li>
-    </ul>
-  </div>
-
-  <div class="card" id="overview">
-    <h2>Overview Section</h2>
-    <p>This is a playground page with sample content to test the comment overlay. Click on any element in comment mode to pin a comment. The comment pin stays anchored to that element.</p>
-    <div class="metrics-grid">
-      <div class="metric-card">
-        <div class="metric-value">2,847</div>
-        <div class="metric-label">Active Users</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-value">94%</div>
-        <div class="metric-label">Satisfaction</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-value">$12.4k</div>
-        <div class="metric-label">Revenue</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" id="chart">
-    <h2>Chart Section</h2>
-    <div class="chart-placeholder">[ Chart placeholder — try pinning a comment here ]</div>
-  </div>
-
-  <div class="card" id="details">
-    <h2>Data Table</h2>
-    <table id="data-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Feature</th>
-          <th>Status</th>
-          <th>Priority</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>1</td><td>Pin placement</td><td><span class="badge badge-green">Done</span></td><td>P0</td></tr>
-        <tr><td>2</td><td>Threaded replies</td><td><span class="badge badge-green">Done</span></td><td>P0</td></tr>
-        <tr><td>3</td><td>JSON export/import</td><td><span class="badge badge-green">Done</span></td><td>P1</td></tr>
-        <tr><td>4</td><td>Merge algorithm</td><td><span class="badge badge-green">Done</span></td><td>P1</td></tr>
-        <tr><td>5</td><td>Real-time sync</td><td><span class="badge badge-orange">Not in v1</span></td><td>P3</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="card" id="footer-section">
-    <h2>Footer Section</h2>
-    <p>More content here for testing pin placement on different elements.</p>
-    <ul id="feature-list">
-      <li>Shadow DOM isolation — no CSS conflicts with the host page</li>
-      <li>Element-relative anchoring — pins follow elements when layout changes</li>
-      <li>Offline-first — no server required, share comments as JSON files</li>
-      <li>Zero dependencies — vanilla TypeScript, ~17KB gzipped</li>
     </ul>
   </div>
 
@@ -151,13 +255,54 @@
         theme: 'auto'
       });
 
-      // Expose for console debugging
       window.pindropLayer = layer;
+
+      // Tab Switching Logic
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.getAttribute('data-tab');
+          
+          tabButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          tabContents.forEach(content => {
+            content.classList.remove('active');
+            if (content.id === tabId) {
+              content.classList.add('active');
+            }
+          });
+
+          // IMPORTANT: Trigger a refresh in pindrop when layout/visibility changes
+          layer.refresh();
+        });
+      });
+
+      // Visibility Toggle Logic
+      const chartCard = document.getElementById('chart');
+      const toggleDisplayBtn = document.getElementById('toggle-display');
+      const toggleVisibilityBtn = document.getElementById('toggle-visibility');
+
+      toggleDisplayBtn.addEventListener('click', () => {
+        const isHidden = chartCard.style.display === 'none';
+        chartCard.style.display = isHidden ? 'block' : 'none';
+        toggleDisplayBtn.classList.toggle('active', !isHidden);
+        toggleDisplayBtn.textContent = isHidden ? 'Hide Section (display: none)' : 'Show Section (display: block)';
+        layer.refresh();
+      });
+
+      toggleVisibilityBtn.addEventListener('click', () => {
+        chartCard.classList.toggle('is-hidden');
+        const isHidden = chartCard.classList.contains('is-hidden');
+        toggleVisibilityBtn.classList.toggle('active', isHidden);
+        toggleVisibilityBtn.textContent = isHidden ? 'Show Section (visibility: visible)' : 'Hide Section (visibility: hidden)';
+        layer.refresh();
+      });
 
       layer.on('comment:add', (c) => console.log('[pindrop] comment:add', c));
       layer.on('mode:change', ({ mode }) => console.log('[pindrop] mode:', mode));
-      layer.on('import:complete', (r) => console.log('[pindrop] import:complete', r));
-      layer.on('export:complete', (r) => console.log('[pindrop] export:complete', r));
     } catch (err) {
       console.error('Pindrop init failed:', err);
     }
