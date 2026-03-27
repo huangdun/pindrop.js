@@ -30,10 +30,11 @@ export class Store {
     this.persist();
   }
 
-  moveAnchor(id: string, anchor: import('./types').Anchor): void {
+  moveAnchor(id: string, anchor: import('./types').Anchor, scope?: import('./types').CommentScope): void {
     const comment = this.comments.get(id);
     if (!comment) return;
     comment.anchor = anchor;
+    comment.scope = scope;
     comment.updatedAt = new Date().toISOString();
     this.persist();
   }
