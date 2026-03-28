@@ -28,7 +28,12 @@
   --pindrop-shadow-pin: 0 0 0.5px rgba(0, 0, 0, 0.35), 0 3px 8px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-* {
+.pindrop-toolbar *,
+.pindrop-popover *,
+.pindrop-sidebar *,
+.pindrop-name-overlay *,
+.pindrop-new-comment-box *,
+.pindrop-new-pin * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
