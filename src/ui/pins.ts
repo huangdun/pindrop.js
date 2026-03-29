@@ -6,6 +6,7 @@ import { PIN_COLOR, PIN_READ, DROP_SHADOW_PIN, PIN_SIZE, PIN_TAIL_OFFSET_X, PIN_
 export class PinRenderer {
   private pins = new Map<string, HTMLDivElement>();
   private tooltip: HTMLDivElement | null = null;
+  private tooltipHideTimer: ReturnType<typeof setTimeout> | null = null;
   private shadowHost: HTMLElement | null = null;
   private activeCommentId: string | null = null;
   private mode: PindropMode = 'view';
@@ -87,11 +88,12 @@ export class PinRenderer {
 
     pin.addEventListener('mouseenter', () => {
       if (this.activeCommentId !== comment.id) {
+        this.cancelTooltipHide();
         this.showTooltip(comment, pin);
       }
     });
     pin.addEventListener('mouseleave', () => {
-      this.hideTooltip();
+      this.scheduleTooltipHide();
     });
 
     let startX = 0, startY = 0;
@@ -212,7 +214,8 @@ export class PinRenderer {
       color:${theme.text} !important;
       line-height:1.4 !important;
       width:280px !important;
-      pointer-events:none !important;
+      pointer-events:auto !important;
+      cursor:pointer !important;
       box-shadow:${theme.shadow} !important;
       z-index:${this.options.zIndex + 1} !important;
       white-space:normal !important;
@@ -237,12 +240,35 @@ export class PinRenderer {
     tip.style.setProperty('left', `${left}px`, 'important');
     tip.style.setProperty('top', `${top}px`, 'important');
 
+    tip.addEventListener('mouseenter', () => this.cancelTooltipHide());
+    tip.addEventListener('mouseleave', () => this.scheduleTooltipHide());
+    tip.addEventListener('click', () => {
+      this.hideTooltip();
+      this.options.onPinClick(comment.id);
+    });
+
     // Append to document.body so it's outside the shadow DOM stacking context
     document.body.appendChild(tip);
     this.tooltip = tip;
   }
 
+  isTooltipVisible(): boolean {
+    return this.tooltip !== null;
+  }
+
+  private scheduleTooltipHide(): void {
+    this.tooltipHideTimer = setTimeout(() => this.hideTooltip(), 120);
+  }
+
+  private cancelTooltipHide(): void {
+    if (this.tooltipHideTimer !== null) {
+      clearTimeout(this.tooltipHideTimer);
+      this.tooltipHideTimer = null;
+    }
+  }
+
   private hideTooltip(): void {
+    this.cancelTooltipHide();
     this.tooltip?.remove();
     this.tooltip = null;
   }

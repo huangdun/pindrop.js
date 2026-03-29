@@ -382,6 +382,7 @@ class PindropLayer {
 
   private onOverlayHover(e: MouseEvent): void {
     if (this.mode !== 'comment') return;
+    if (this.pinRenderer.isTooltipVisible()) { this.clearHighlight(); this.container.overlay.style.cursor = 'default'; return; }
 
     this.container.overlay.style.display = 'none';
     const target = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
@@ -411,6 +412,7 @@ class PindropLayer {
 
   private async onOverlayClick(e: MouseEvent): Promise<void> {
     if (this.mode !== 'comment') return;
+    if (this.pinRenderer.isTooltipVisible()) return;
     this.clearHighlight();
 
     // Get element under click (temporarily hide overlay)
