@@ -95,6 +95,7 @@ export class PinRenderer {
     });
 
     let startX = 0, startY = 0;
+    let grabOffsetX = 0, grabOffsetY = 0;
     let isDragging = false;
     let dragHasMoved = false;
 
@@ -103,6 +104,9 @@ export class PinRenderer {
       e.preventDefault();
       startX = e.clientX;
       startY = e.clientY;
+      // Record where within the pin the user clicked so we can maintain that offset during drag
+      grabOffsetX = (parseFloat(pin.style.left) || 0) - e.pageX;
+      grabOffsetY = (parseFloat(pin.style.top) || 0) - e.pageY;
       isDragging = true;
       dragHasMoved = false;
       // Inject a global cursor override so the grabbing cursor wins over the overlay's cursor
@@ -124,8 +128,8 @@ export class PinRenderer {
           }
           this.hideTooltip();
           // Adjust physical layout immediately so the user feels the drag natively
-          pin.style.setProperty('left', `${moveEvent.pageX}px`, 'important');
-          pin.style.setProperty('top', `${moveEvent.pageY}px`, 'important');
+          pin.style.setProperty('left', `${moveEvent.pageX + grabOffsetX}px`, 'important');
+          pin.style.setProperty('top', `${moveEvent.pageY + grabOffsetY}px`, 'important');
           // Make pin invisible to hit-testing so document.elementsFromPoint goes thru it!
           pin.style.setProperty('pointer-events', 'none', 'important');
         }
@@ -143,7 +147,7 @@ export class PinRenderer {
 
         if (dragHasMoved) {
           if (this.options.onPinMove) {
-            this.options.onPinMove(comment.id, upEvent.clientX, upEvent.clientY, upEvent.pageX, upEvent.pageY);
+            this.options.onPinMove(comment.id, upEvent.clientX + grabOffsetX, upEvent.clientY + grabOffsetY, upEvent.pageX + grabOffsetX, upEvent.pageY + grabOffsetY);
           }
           this.options.onPinDragEnd?.(comment.id);
         } else {
