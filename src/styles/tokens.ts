@@ -4,7 +4,7 @@
  * defined in styles.css which mirror these values.
  */
 
-export const PIN_COLOR = '#0070f3';
+export const PIN_COLOR = '#0d99ff';
 export const PIN_READ = '#ffffff'; // fallback, use getReadPinColor() for theme-aware value
 export const WHITE = '#fff';
 
@@ -26,7 +26,7 @@ export const PIN_TAIL_OFFSET_Y = Math.round(21 / 24 * PIN_SIZE);  // 32
 
 /** Curated avatar palette — distinct, accessible on white text. */
 const AVATAR_COLORS = [
-  '#0070f3', '#e53935', '#7b61ff', '#f57c00',
+  '#0d99ff', '#e53935', '#7b61ff', '#f57c00',
   '#00b0a0', '#d81b60', '#5c6bc0', '#43a047',
   '#8d6e63', '#00838f',
 ];

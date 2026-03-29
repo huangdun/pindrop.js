@@ -2,7 +2,7 @@
  * Canonical design token values live in tokens.ts — keep these in sync. */
 
 :host {
-  --pindrop-pin-color: #0070f3;
+  --pindrop-pin-color: #0d99ff;
   --pindrop-pin-resolved: #b3b3b3;
   --pindrop-bg: #ffffff;
   --pindrop-bg-secondary: #f5f5f5;
