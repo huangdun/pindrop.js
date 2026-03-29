@@ -97,14 +97,24 @@ class PindropLayer {
       zIndex: this.options.zIndex,
       onPinClick: (commentId) => this.onPinClick(commentId),
       onPinMove: (commentId, clientX, clientY, pageX, pageY) => {
-        // Find the element at the drop point (pin has pointer-events:none so it won't be hit)
+        this.clearHighlight();
         const els = document.elementsFromPoint(clientX, clientY);
-        // Skip pindrop's own UI elements
-        const target = els.find(el => !this.container.root.contains(el)) as HTMLElement | undefined;
+        const target = els.find(el => this.isContentElement(el)) as HTMLElement | undefined;
         if (!target) return;
         const newAnchor = createAnchor(target, pageX, pageY);
         this.store.moveAnchor(commentId, newAnchor, this.options.getScope?.(target));
         this.refreshUI();
+      },
+      onPinDragOver: (clientX, clientY) => {
+        const els = document.elementsFromPoint(clientX, clientY);
+        const target = els.find(el => this.isContentElement(el)) as HTMLElement | undefined;
+        if (!target) { this.clearHighlight(); return; }
+        if (target !== this.highlightedEl) {
+          this.clearHighlight();
+          this.highlightedEl = target;
+          this.savedOutline = target.style.outline;
+          target.style.outline = `2px solid ${PIN_COLOR}`;
+        }
       },
       onPinDragStart: (commentId) => {
         // Remember if this pin's popover was open before the drag
@@ -377,7 +387,8 @@ class PindropLayer {
 
   private isContentElement(el: Element | null): boolean {
     return !!el && el !== document.body && el !== document.documentElement
-      && el !== this.container.root && !this.container.pinContainer.contains(el);
+      && el !== this.container.root && el !== this.container.overlay
+      && !this.container.pinContainer.contains(el);
   }
 
   private onOverlayHover(e: MouseEvent): void {

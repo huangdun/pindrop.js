@@ -18,6 +18,7 @@ export class PinRenderer {
       zIndex: number; 
       onPinClick: (commentId: string) => void;
       onPinMove?: (commentId: string, clientX: number, clientY: number, pageX: number, pageY: number) => void;
+      onPinDragOver?: (clientX: number, clientY: number) => void;
       onPinDragStart?: (commentId: string) => void;
       onPinDragEnd?: (commentId: string) => void;
     }
@@ -134,6 +135,7 @@ export class PinRenderer {
           pin.style.setProperty('top', `${moveEvent.pageY + grabOffsetY}px`, 'important');
           // Make pin invisible to hit-testing so document.elementsFromPoint goes thru it!
           pin.style.setProperty('pointer-events', 'none', 'important');
+          this.options.onPinDragOver?.(moveEvent.clientX, moveEvent.clientY);
         }
       };
 
