@@ -18,10 +18,10 @@
   "author": "Dun Huang",
   "repository": {
     "type": "git",
-    "url": "https://github.com/huangdun/pindrop.js.git"
+    "url": "git+https://github.com/huangdun/pindrop.js.git"
   },
   "bin": {
-    "pindrop": "./bin/cli.js"
+    "pindrop": "bin/cli.js"
   },
   "files": [
     "dist",
