@@ -18,14 +18,18 @@ export function mergeComments(local: Comment[], incoming: Comment[]): MergeResul
       added++;
     } else {
       merged++;
-      const winner = new Date(inc.updatedAt) > new Date(existing.updatedAt) ? inc : existing;
+      const contentChanged = new Date(inc.updatedAt) > new Date(existing.updatedAt);
+      const winner = contentChanged ? inc : existing;
 
       // Merge replies from both sides
       const mergedReplies = mergeReplies(existing.replies, inc.replies);
+      const hasNewReplies = mergedReplies.length > existing.replies.length;
 
       localMap.set(inc.id, {
         ...winner,
         replies: mergedReplies,
+        // Preserve local read state; only re-flag unread if content changed or new replies arrived
+        unread: contentChanged || hasNewReplies ? true : existing.unread,
       });
     }
   }

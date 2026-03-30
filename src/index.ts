@@ -15,6 +15,7 @@ import { AnchorTracker } from './anchoring/tracker';
 import { createAnchor } from './anchoring/position';
 import { resolveAnchorPosition } from './anchoring/position';
 import { exportComments, importComments, openFilePicker } from './io/file';
+import { mergeComments } from './io/merge';
 import { detectTheme, applyTheme } from './styles/theme';
 import { PIN_COLOR, COMMENT_CURSOR, pinSvgHtml } from './styles/tokens';
 
@@ -301,6 +302,12 @@ class PindropLayer {
 
   getComments(): Comment[] {
     return this.store.getComments();
+  }
+
+  applyRemoteComments(incoming: Comment[]): void {
+    const { comments } = mergeComments(this.store.getComments(), incoming);
+    this.store.replaceAll(comments);
+    this.refreshUI();
   }
 
   refresh(): void {

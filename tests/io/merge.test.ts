@@ -64,6 +64,45 @@ describe('mergeComments', () => {
     expect(result.comments[0].text).toBe('Local');
   });
 
+  it('preserves local unread=false when content is unchanged', () => {
+    const local = [makeComment({ id: 'c1', unread: false, updatedAt: '2026-01-01T00:00:00Z' })];
+    const incoming = [makeComment({ id: 'c1', unread: true, updatedAt: '2026-01-01T00:00:00Z' })];
+    const result = mergeComments(local, incoming);
+    expect(result.comments[0].unread).toBe(false);
+  });
+
+  it('marks unread when remote has newer updatedAt', () => {
+    const local = [makeComment({ id: 'c1', unread: false, updatedAt: '2026-01-01T00:00:00Z' })];
+    const incoming = [makeComment({ id: 'c1', unread: false, text: 'Edited', updatedAt: '2026-01-02T00:00:00Z' })];
+    const result = mergeComments(local, incoming);
+    expect(result.comments[0].unread).toBe(true);
+  });
+
+  it('preserves local unread=false when local is newer', () => {
+    const local = [makeComment({ id: 'c1', unread: false, updatedAt: '2026-01-02T00:00:00Z' })];
+    const incoming = [makeComment({ id: 'c1', unread: true, updatedAt: '2026-01-01T00:00:00Z' })];
+    const result = mergeComments(local, incoming);
+    expect(result.comments[0].unread).toBe(false);
+  });
+
+  it('marks unread when remote has new replies', () => {
+    const local = [makeComment({ id: 'c1', unread: false, replies: [] })];
+    const incoming = [makeComment({
+      id: 'c1', unread: false, replies: [
+        { id: 'r1', author: 'B', text: 'New reply', createdAt: '2026-01-02T00:00:00Z', updatedAt: '2026-01-02T00:00:00Z' },
+      ]
+    })];
+    const result = mergeComments(local, incoming);
+    expect(result.comments[0].unread).toBe(true);
+  });
+
+  it('marks new incoming comments as unread regardless of incoming unread field', () => {
+    const local: ReturnType<typeof makeComment>[] = [];
+    const incoming = [makeComment({ id: 'c2', unread: false })];
+    const result = mergeComments(local, incoming);
+    expect(result.comments[0].unread).toBe(true);
+  });
+
   it('deduplicates replies with same id, newer wins', () => {
     const local = [makeComment({
       id: 'c1', replies: [

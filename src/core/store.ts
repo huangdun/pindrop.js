@@ -1,5 +1,6 @@
 import type { Comment, Reply, PindropStorageAdapter } from './types';
 import type { EventEmitter } from './events';
+import { wrapWithReadJournal } from './read-journal';
 
 export class Store {
   private comments: Map<string, Comment> = new Map();
@@ -10,7 +11,7 @@ export class Store {
 
   async enablePersistence(storageKey: string, adapter?: PindropStorageAdapter): Promise<void> {
     this.storageKey = `${storageKey}-comments`;
-    this.adapter = adapter;
+    this.adapter = adapter ? wrapWithReadJournal(adapter, storageKey) : undefined;
     await this.load();
   }
 
