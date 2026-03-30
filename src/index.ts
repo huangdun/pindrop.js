@@ -1,8 +1,8 @@
-import type { PindropOptions, PindropEvent, PindropEventMap, PindropMode, Comment, ImportResult, CommentScope } from './core/types';
+import type { PindropOptions, PindropEvent, PindropEventMap, PindropMode, Comment, CommentMeta, CommentableElement, Reply, ImportResult, CommentScope } from './core/types';
 import './styles/styles.css';
 import { EventEmitter } from './core/events';
 import { Store } from './core/store';
-import { filterVisibleComments, getCommentVisibility } from './core/visibility';
+import { filterVisibleComments, getCommentVisibility, isElementVisible } from './core/visibility';
 import { createContainer, destroyContainer, type ContainerElements } from './ui/container';
 import { PinRenderer } from './ui/pins';
 import { Toolbar } from './ui/toolbar';
@@ -12,8 +12,8 @@ import { NamePrompt } from './ui/name-prompt';
 import { ConfirmModal } from './ui/confirm-modal';
 import { KeyboardHandler } from './ui/keyboard';
 import { AnchorTracker } from './anchoring/tracker';
-import { createAnchor } from './anchoring/position';
-import { resolveAnchorPosition } from './anchoring/position';
+import { createAnchor, resolveAnchorPosition } from './anchoring/position';
+import { generateSelector } from './anchoring/selector';
 import { exportComments, importComments, openFilePicker } from './io/file';
 import { mergeComments } from './io/merge';
 import { detectTheme, applyTheme } from './styles/theme';
@@ -248,22 +248,47 @@ class PindropLayer {
     this.events.off(event, callback);
   }
 
-  addComment(options: { selector: string; text: string; author?: string }): void {
-    const el = document.querySelector(options.selector);
-    if (!el) {
-      console.warn(`Pindrop: Could not find element matching "${options.selector}" for programmatic comment.`);
-      return;
+  addComment(options: (
+    | { selector: string; x?: never; y?: never }
+    | { selector?: never; x: number; y: number }
+  ) & { text: string; author?: string; meta?: CommentMeta }): Comment | null {
+    let anchor: ReturnType<typeof createAnchor>;
+
+    let scopeEl: Element | null = null;
+
+    if (options.selector) {
+      const el = document.querySelector(options.selector);
+      if (!el) {
+        console.warn(`Pindrop: Could not find element matching "${options.selector}" for programmatic comment.`);
+        return null;
+      }
+      const rect = el.getBoundingClientRect();
+      const pageX = rect.left + rect.width / 2 + window.scrollX;
+      const pageY = rect.top + rect.height / 2 + window.scrollY;
+      anchor = createAnchor(el, pageX, pageY);
+      scopeEl = el;
+    } else {
+      const vx = (options as { x: number; y: number }).x;
+      const vy = (options as { x: number; y: number }).y;
+      const clientX = vx * window.innerWidth;
+      const clientY = vy * window.innerHeight;
+      const el = document.elementFromPoint(clientX, clientY);
+      const pageX = clientX + window.scrollX;
+      const pageY = clientY + window.scrollY;
+      if (el && this.isContentElement(el)) {
+        anchor = createAnchor(el, pageX, pageY);
+        scopeEl = el;
+      } else {
+        // No element hit — store as viewport-only anchor
+        anchor = { selector: '', offsetX: vx, offsetY: vy, viewportX: vx, viewportY: vy };
+      }
     }
-    const rect = el.getBoundingClientRect();
-    const pageX = rect.left + rect.width / 2 + window.scrollX;
-    const pageY = rect.top + rect.height / 2 + window.scrollY;
-    const anchor = createAnchor(el, pageX, pageY);
 
     const now = new Date().toISOString();
     const comment: Comment = {
       id: crypto.randomUUID(),
       anchor,
-      scope: this.options.getScope?.(el),
+      scope: scopeEl ? this.options.getScope?.(scopeEl) : undefined,
       author: options.author || this.currentUser || 'Automated Agent',
       text: options.text,
       createdAt: now,
@@ -271,37 +296,93 @@ class PindropLayer {
       resolved: false,
       unread: false,
       replies: [],
+      ...(options.meta ? { meta: options.meta } : {}),
     };
-    
+
     this.store.addComment(comment);
     this.refreshUI();
+    return comment;
   }
 
-  addReply(options: { commentId: string; text: string; author?: string }): void {
+  addReply(options: { commentId: string; text: string; author?: string }): Reply | null {
     const parent = this.store.getComment(options.commentId);
     if (!parent) {
       console.warn(`Pindrop: Could not find comment with ID "${options.commentId}" to append programmatic reply.`);
-      return;
+      return null;
     }
 
     const now = new Date().toISOString();
-    this.store.addReply(options.commentId, {
+    const reply: Reply = {
       id: crypto.randomUUID(),
       author: options.author || this.currentUser || 'Automated Agent',
       text: options.text,
       createdAt: now,
       updatedAt: now,
-    });
+    };
+    this.store.addReply(options.commentId, reply);
     this.sidebar.update(this.getVisibleComments());
 
     if (this.popover.getCurrentCommentId() === options.commentId) {
       const pos = resolveAnchorPosition(parent.anchor);
       this.popover.show(parent, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
     }
+    return reply;
   }
 
   getComments(): Comment[] {
     return this.store.getComments();
+  }
+
+  getCommentableElements(): CommentableElement[] {
+    const SEMANTIC_SELECTORS = [
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'main', 'header', 'footer', 'nav', 'aside',
+      'section', 'article',
+      'form', 'table', 'figure',
+      'button', 'a[href]', 'img[alt]',
+      '[data-testid]', '[data-pindrop-id]', '[id]',
+    ].join(',');
+
+    const seen = new Set<Element>();
+    const results: CommentableElement[] = [];
+
+    document.querySelectorAll(SEMANTIC_SELECTORS).forEach((el) => {
+      if (!isElementVisible(el)) return;
+      if (this.container.root.contains(el)) return;
+      // Skip if an ancestor is already included — prefer the most specific
+      for (const ancestor of seen) {
+        if (ancestor.contains(el)) {
+          seen.delete(ancestor);
+          const idx = results.findIndex(r => r.selector === generateSelector(ancestor));
+          if (idx !== -1) results.splice(idx, 1);
+          break;
+        }
+        if (el.contains(ancestor)) return;
+      }
+      seen.add(el);
+
+      const rect = el.getBoundingClientRect();
+      const label =
+        el.getAttribute('aria-label') ||
+        el.getAttribute('alt') ||
+        el.getAttribute('data-testid') ||
+        el.getAttribute('id') ||
+        (el.textContent?.trim().slice(0, 60) ?? '') ||
+        el.tagName.toLowerCase();
+
+      results.push({
+        selector: generateSelector(el),
+        label: label.trim(),
+        rect: {
+          x: rect.left + window.scrollX,
+          y: rect.top + window.scrollY,
+          width: rect.width,
+          height: rect.height,
+        },
+      });
+    });
+
+    return results;
   }
 
   applyRemoteComments(incoming: Comment[]): void {
@@ -323,10 +404,12 @@ class PindropLayer {
     return getCommentVisibility(comment, this.options).visible;
   }
 
-  resolveComment(commentId: string, author?: string): void {
-    if (!this.store.getComment(commentId)) return;
+  resolveComment(commentId: string, author?: string): Comment | null {
+    const comment = this.store.getComment(commentId);
+    if (!comment) return null;
     this.store.resolveComment(commentId, author || this.currentUser || 'Automated Agent');
     this.refreshUI();
+    return this.store.getComment(commentId) ?? null;
   }
 
   reopenComment(commentId: string): void {
@@ -874,4 +957,4 @@ export const Pindrop = {
   },
 };
 
-export type { PindropOptions, PindropMode, Comment, CommentScope, ImportResult, PindropEvent, PindropEventMap };
+export type { PindropOptions, PindropMode, Comment, CommentMeta, CommentableElement, CommentScope, ImportResult, PindropEvent, PindropEventMap };

@@ -1,5 +1,5 @@
 import type { Comment } from '../core/types';
-import { avatarColor } from '../styles/tokens';
+import { avatarColor, ICON_AGENT } from '../styles/tokens';
 
 // Lucide icon paths (24x24)
 const svgBtn = (inner: string) => `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
@@ -111,7 +111,7 @@ export class Popover {
       isOwn: comment.author === this.currentUser,
       canDelete: false,
       onEdit: (newText) => { this.callbacks.onEditComment(comment.id, newText); },
-    }));
+    }, comment.meta?.source === 'agent'));
 
     // Replies
     for (const reply of comment.replies) {
@@ -286,7 +286,8 @@ export class Popover {
     author: string,
     createdAt: string,
     text: string,
-    actions?: { isOwn: boolean; canDelete: boolean; onEdit: (newText: string) => void; onDelete?: () => void }
+    actions?: { isOwn: boolean; canDelete: boolean; onEdit: (newText: string) => void; onDelete?: () => void },
+    isAgent = false,
   ): HTMLDivElement {
     const row = document.createElement('div');
     row.className = 'pindrop-popover-row';
@@ -301,7 +302,8 @@ export class Popover {
     // Name + timestamp + more menu
     const nameRow = document.createElement('div');
     nameRow.className = 'pindrop-popover-name';
-    nameRow.innerHTML = `<strong>${this.escapeHtml(author)}</strong> <span class="pindrop-time">${this.formatTime(createdAt)}</span>`;
+    const agentBadge = isAgent ? `<span class="pindrop-agent-badge">${ICON_AGENT}Agent</span>` : '';
+    nameRow.innerHTML = `<strong>${this.escapeHtml(author)}</strong>${agentBadge}<span class="pindrop-time">${this.formatTime(createdAt)}</span>`;
 
     // Text
     const body = document.createElement('div');

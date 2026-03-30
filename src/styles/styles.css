@@ -262,7 +262,7 @@
 .pindrop-popover-name {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   line-height: 22px;
   min-width: 0;
 }
@@ -278,7 +278,7 @@
 
 .pindrop-time {
   color: var(--pindrop-text-secondary);
-  font-size: 13px;
+  font-size: 11px;
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -675,7 +675,7 @@
 
 .pindrop-sidebar-name-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 6px;
   min-height: 24px;
   line-height: 24px;
@@ -692,8 +692,6 @@
 }
 
 .pindrop-sidebar-name-row .pindrop-time {
-  font-size: 11px;
-  color: var(--pindrop-text-secondary);
   white-space: nowrap;
 }
 
@@ -712,6 +710,22 @@
 .pindrop-sidebar-meta {
   font-size: 11px;
   color: var(--pindrop-text-secondary);
+}
+
+.pindrop-agent-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 550;
+  line-height: 1.4;
+  padding: 2px 6px;
+  border-radius: 99px;
+  background: #0d99ff1f;
+  color: var(--pindrop-pin-color);
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+  align-self: center;
 }
 
 /* Empty state */
@@ -863,6 +877,7 @@
 
 .pindrop-new-comment-box {
   position: fixed;
+  box-sizing: border-box;
   width: 280px;
   background: var(--pindrop-bg);
   border-radius: var(--pindrop-radius);

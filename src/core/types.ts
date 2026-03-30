@@ -34,6 +34,18 @@ export interface Reply {
   updatedAt: string;
 }
 
+export interface CommentableElement {
+  selector: string;
+  label: string;
+  rect: { x: number; y: number; width: number; height: number };
+}
+
+export interface CommentMeta {
+  source?: 'agent' | 'human';
+  model?: string;
+  [key: string]: unknown;
+}
+
 export interface Comment {
   id: string;
   anchor: Anchor;
@@ -47,6 +59,7 @@ export interface Comment {
   resolvedAt?: string;
   unread: boolean;
   replies: Reply[];
+  meta?: CommentMeta;
 }
 
 export interface PindropData {

@@ -47,6 +47,9 @@ export const COMMENT_CURSOR = (() => {
   return `url("data:image/svg+xml;base64,${b64}") 2 22, crosshair`;
 })();
 
+/** Bot icon SVG (inline, 12x12) for agent badge. */
+export const ICON_AGENT = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>`;
+
 /** Generate inline SVG for a pin with a number inside the bubble.
  *  Circle center is at (12, 11) in the 24x24 viewBox. */
 export function pinSvgHtml(color: string, number: number | string, textColor: string = WHITE): string {

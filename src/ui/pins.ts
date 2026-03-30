@@ -1,7 +1,7 @@
 import type { PindropMode, Comment } from '../core/types';
 import type { Store } from '../core/store';
 import { resolveAnchorPosition } from '../anchoring/position';
-import { PIN_COLOR, PIN_READ, DROP_SHADOW_PIN, PIN_SIZE, PIN_TAIL_OFFSET_X, PIN_TAIL_OFFSET_Y, FONT_FAMILY, pinSvgHtml, avatarColor } from '../styles/tokens';
+import { PIN_COLOR, PIN_READ, DROP_SHADOW_PIN, PIN_SIZE, PIN_TAIL_OFFSET_X, PIN_TAIL_OFFSET_Y, FONT_FAMILY, pinSvgHtml, avatarColor, ICON_AGENT } from '../styles/tokens';
 
 export class PinRenderer {
   private pins = new Map<string, HTMLDivElement>();
@@ -204,7 +204,11 @@ export class PinRenderer {
 
     const initial = comment.author.charAt(0).toUpperCase();
     const aColor = avatarColor(comment.author);
-    tip.innerHTML = `<div style="display:flex;align-items:flex-start;gap:10px;"><div style="flex-shrink:0;width:24px;height:24px;border-radius:9999px;background:${aColor};color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-top:-1px;">${initial}</div><div style="min-width:0;"><strong style="font-weight:550;font-size:13px;line-height:22px;">${this.escapeHtml(comment.author)}</strong><div style="color:${theme.textSecondary};margin-top:2px;line-height:22px;">${this.escapeHtml(text)}</div>${replyLabel}</div></div>`;
+    const agentBadge = comment.meta?.source === 'agent'
+      ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:550;padding:2px 6px;border-radius:99px;background:${PIN_COLOR}1f;color:${PIN_COLOR};margin-left:6px;vertical-align:middle;letter-spacing:0.02em;">${ICON_AGENT}Agent</span>`
+      : '';
+    const time = this.formatTime(comment.createdAt);
+    tip.innerHTML = `<div style="display:flex;align-items:flex-start;gap:10px;"><div style="flex-shrink:0;width:24px;height:24px;border-radius:9999px;background:${aColor};color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-top:-1px;">${initial}</div><div style="min-width:0;"><span style="display:flex;align-items:center;gap:0;flex-wrap:wrap;"><strong style="font-weight:550;font-size:13px;line-height:22px;">${this.escapeHtml(comment.author)}</strong>${agentBadge}<span style="color:${theme.textSecondary};font-size:11px;margin-left:6px;line-height:22px;">${time}</span></span><div style="color:${theme.textSecondary};margin-top:2px;line-height:22px;">${this.escapeHtml(text)}</div>${replyLabel}</div></div>`;
     tip.style.cssText = `
       position:fixed !important;
       box-sizing:border-box !important;
@@ -273,6 +277,19 @@ export class PinRenderer {
     this.cancelTooltipHide();
     this.tooltip?.remove();
     this.tooltip = null;
+  }
+
+  private formatTime(iso: string): string {
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMins = Math.floor((now.getTime() - d.getTime()) / 60000);
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString();
   }
 
   private escapeHtml(text: string): string {

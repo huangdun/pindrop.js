@@ -1,4 +1,5 @@
 import type { Comment } from '../core/types';
+import { ICON_AGENT } from '../styles/tokens';
 
 export interface SidebarCallbacks {
   onCommentClick: (commentId: string) => void;
@@ -275,7 +276,14 @@ export class Sidebar {
     time.className = 'pindrop-time';
     time.textContent = this.formatTime(comment.createdAt);
 
-    nameRow.append(author, time);
+    if (comment.meta?.source === 'agent') {
+      const badge = document.createElement('span');
+      badge.className = 'pindrop-agent-badge';
+      badge.innerHTML = `${ICON_AGENT}Agent`;
+      nameRow.append(author, badge, time);
+    } else {
+      nameRow.append(author, time);
+    }
 
     const text = document.createElement('p');
     text.textContent = comment.text;

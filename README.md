@@ -89,15 +89,28 @@ pindrop.on('comment:resolve', (comment) => {
 Pindrop exposes a programmatic API so Playwright test suites or AI agents can directly manage the board without simulating mouse clicks.
 
 \`\`\`javascript
-// Drop a new pin automatically based on a CSS query
-pindrop.addComment({
+// Discover semantic elements on the page before commenting
+const elements = pindrop.getCommentableElements();
+// [{ selector: '#checkout-btn', label: 'Place order', rect: { x, y, width, height } }, ...]
+
+// Drop a pin by CSS selector — returns the Comment or null if element not found
+const comment = pindrop.addComment({
   selector: 'header > button.checkout',
   text: 'This button is failing the automated contrast test.',
-  author: 'QA Bot'
+  author: 'QA Bot',
+  meta: { source: 'agent', model: 'gpt-4o' },
 });
 
-// Resolve an existing comment programmatically
-pindrop.resolveComment('comment-1234', 'QA Bot');
+// Drop a pin by viewport coordinates (0–1) — useful when reasoning from a screenshot
+pindrop.addComment({ x: 0.5, y: 0.2, text: 'Header looks broken on mobile', author: 'Agent' });
+
+// Reply to an existing comment — returns the Reply or null
+if (comment) {
+  pindrop.addReply({ commentId: comment.id, text: 'Contrast ratio is 2.1:1, needs 4.5:1', author: 'QA Bot' });
+}
+
+// Resolve a comment — returns the updated Comment or null
+pindrop.resolveComment(comment.id, 'QA Bot');
 \`\`\`
 
 ### Scope Comments To Views Or Page States
