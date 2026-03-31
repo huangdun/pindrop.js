@@ -121,7 +121,9 @@ export class NamePrompt {
       input.className = 'pindrop-name-input';
       input.placeholder = 'Enter your name';
       input.value = prefill;
-      input.autofocus = true;
+      if (!mobile) {
+        input.autofocus = true;
+      }
 
       const submitBtn = document.createElement('button');
       submitBtn.className = 'pindrop-name-submit';
@@ -157,7 +159,9 @@ export class NamePrompt {
       modal.append(header, body);
       overlay.appendChild(modal);
       this.shadowContent.appendChild(overlay);
-      input.focus();
+      if (!mobile) {
+        input.focus();
+      }
     });
   }
 }

@@ -59,7 +59,7 @@ export class BottomSheet {
     pill.className = 'pindrop-sheet-handle-pill';
     handle.appendChild(pill);
     this.el.appendChild(handle);
-    addSwipeToDismiss(handle, this.el, () => this.hide());
+    addSwipeToDismiss(handle, this.el, (isSwipe) => this.hide(isSwipe));
 
     // Titlebar (reuse popover titlebar classes)
     const titlebar = document.createElement('div');

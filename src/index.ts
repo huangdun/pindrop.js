@@ -257,6 +257,7 @@ class PindropLayer {
   private showViewer(comment: Comment, pos: { x: number; y: number }): void {
     if (this.isMobile()) {
       this.popover.hide();
+      this.sidebar.hide();
       this.sheet.show(comment, pos);
       this.toolbar.setVisible(false);
     } else {
