@@ -133,29 +133,51 @@ export class Sidebar {
       this.switchBtn.title = 'Close';
       this.switchBtn.style.display = '';
       this.switchBtn.onclick = () => { this.hide(); this.callbacks.onClose?.(); };
-      addSwipeToDismiss(this.handle, this.el, () => { this.hide(); this.callbacks.onClose?.(); });
+      addSwipeToDismiss(this.handle, this.el, (isSwipe) => { this.hide(isSwipe); this.callbacks.onClose?.(); });
       if (!this.scrim) {
         this.scrim = document.createElement('div');
         this.scrim.className = 'pindrop-sheet-scrim';
+        this.scrim.style.touchAction = 'none';
         this.scrim.addEventListener('click', () => {
           this.hide();
           this.callbacks.onClose?.();
         });
         this.shadowContent.insertBefore(this.scrim, this.el);
       }
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
     }
     this.el.style.display = '';
   }
 
-  hide(): void {
+  hide(isSwipe = false): void {
     this.visible = false;
     if (this.el.classList.contains('pindrop-sidebar-sheet')) {
-      this.el.classList.remove('pindrop-sidebar-sheet');
+      if (!isSwipe) {
+        this.el.classList.remove('pindrop-sidebar-sheet');
+      }
       this.switchBtn.innerHTML = this.position === 'right' ? ICON_TO_LEFT : ICON_TO_RIGHT;
       this.switchBtn.title = this.position === 'right' ? 'Move to left' : 'Move to right';
       this.switchBtn.onclick = null;
-      this.scrim?.remove();
-      this.scrim = null;
+      if (this.scrim) {
+        this.scrim.classList.add('pindrop-sheet-closing');
+      }
+      
+      const finishHide = () => {
+        this.el.classList.remove('pindrop-sidebar-sheet');
+        this.scrim?.remove();
+        this.scrim = null;
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        this.el.style.display = 'none';
+      };
+
+      if (isSwipe) {
+        setTimeout(finishHide, 200);
+      } else {
+        finishHide();
+      }
+      return;
     }
     this.el.style.display = 'none';
   }

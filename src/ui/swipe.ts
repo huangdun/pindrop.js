@@ -5,7 +5,7 @@
 export function addSwipeToDismiss(
   handle: HTMLElement,
   sheet: HTMLElement,
-  onDismiss: () => void,
+  onDismiss: (isSwipe?: boolean) => void,
 ): void {
   let startY = 0;
   let currentDY = 0;
@@ -30,7 +30,7 @@ export function addSwipeToDismiss(
     if (currentDY > sheet.offsetHeight * 0.3) {
       sheet.style.transition = 'transform 0.2s ease-in';
       sheet.style.transform = `translateY(${sheet.offsetHeight}px)`;
-      setTimeout(onDismiss, 200);
+      onDismiss(true);
     } else {
       sheet.style.transition = 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
       sheet.style.transform = '';

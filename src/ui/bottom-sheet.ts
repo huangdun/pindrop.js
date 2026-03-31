@@ -203,7 +203,7 @@ export class BottomSheet {
     this.shadowContent.appendChild(this.el);
   }
 
-  hide(): void {
+  hide(isSwipe = false): void {
     if (!this.el) return;
 
     const el = this.el;
@@ -215,7 +215,9 @@ export class BottomSheet {
 
     this.callbacks.onClose?.();
 
-    el.classList.add('pindrop-sheet-closing');
+    if (!isSwipe) {
+      el.classList.add('pindrop-sheet-closing');
+    }
     scrim?.classList.add('pindrop-sheet-closing');
 
     setTimeout(() => {

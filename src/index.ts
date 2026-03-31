@@ -848,9 +848,18 @@ class PindropLayer {
 
     wrap.append(textarea, btn);
     inputArea.appendChild(wrap);
-    addSwipeToDismiss(handle, sheet, () => {
-      this.dismissNewComment();
-      this.toolbar.setVisible(true);
+    addSwipeToDismiss(handle, sheet, (isSwipe) => {
+      const dismiss = () => {
+        this.dismissNewComment();
+        this.toolbar.setVisible(true);
+      };
+      if (isSwipe) {
+        scrim.classList.add('pindrop-sheet-closing');
+        pin.classList.add('pindrop-saving'); // fade out pin
+        setTimeout(dismiss, 200);
+      } else {
+        dismiss();
+      }
     });
     sheet.append(handle, inputArea);
     wrapper.append(scrim, pin, sheet);
