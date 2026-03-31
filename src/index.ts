@@ -732,6 +732,7 @@ class PindropLayer {
   private dismissNewComment(): void {
     if (this.newCommentEl) {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
       this.newCommentEl.remove();
       this.newCommentEl = null;
       this.newCommentAnchor = null;
@@ -755,6 +756,7 @@ class PindropLayer {
     this.container.root.style.height = '100vh';
     this.container.root.style.pointerEvents = 'none';
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
 
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;pointer-events:none;z-index:2;';
@@ -770,6 +772,7 @@ class PindropLayer {
     const scrim = document.createElement('div');
     scrim.className = 'pindrop-sheet-scrim';
     scrim.style.pointerEvents = 'auto';
+    scrim.style.touchAction = 'none';
     scrim.addEventListener('click', () => {
       this.dismissNewComment();
       this.toolbar.setVisible(true);

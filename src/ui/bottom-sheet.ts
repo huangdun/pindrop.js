@@ -39,10 +39,12 @@ export class BottomSheet {
     this.hide();
     this.currentCommentId = comment.id;
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
 
     // Scrim
     this.scrim = document.createElement('div');
     this.scrim.className = 'pindrop-sheet-scrim';
+    this.scrim.style.touchAction = 'none';
     this.scrim.addEventListener('click', () => this.hide());
 
     // Sheet
@@ -220,6 +222,7 @@ export class BottomSheet {
       el.remove();
       scrim?.remove();
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }, 220);
   }
 
