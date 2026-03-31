@@ -731,6 +731,7 @@ class PindropLayer {
 
   private dismissNewComment(): void {
     if (this.newCommentEl) {
+      document.body.style.overflow = '';
       this.newCommentEl.remove();
       this.newCommentEl = null;
       this.newCommentAnchor = null;
@@ -753,6 +754,7 @@ class PindropLayer {
     this.container.root.style.width = '100vw';
     this.container.root.style.height = '100vh';
     this.container.root.style.pointerEvents = 'none';
+    document.body.style.overflow = 'hidden';
 
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;pointer-events:none;z-index:2;';

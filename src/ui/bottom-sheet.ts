@@ -38,6 +38,7 @@ export class BottomSheet {
   show(comment: Comment, _position: { x: number; y: number }): void {
     this.hide();
     this.currentCommentId = comment.id;
+    document.body.style.overflow = 'hidden';
 
     // Scrim
     this.scrim = document.createElement('div');
@@ -218,6 +219,7 @@ export class BottomSheet {
     setTimeout(() => {
       el.remove();
       scrim?.remove();
+      document.body.style.overflow = '';
     }, 220);
   }
 
