@@ -611,6 +611,13 @@ class PindropLayer {
     // Hide the overlay so it can't intercept clicks on the comment box
     this.container.overlay.style.display = 'none';
 
+    // Safari rendering bug: WebKit won't update the cursor after `display: none` until the mouse moves.
+    // Hack: Force a global cursor repaint, then remove it on the next frame.
+    const safariHack = document.createElement('style');
+    safariHack.textContent = '*, *::before, *::after { cursor: default !important; }';
+    document.head.appendChild(safariHack);
+    requestAnimationFrame(() => safariHack.remove());
+
     // Expand the shadow host to full viewport so shadow DOM content is hit-testable
     // (A 0x0 host causes browsers to skip its shadow DOM during hit-testing)
     this.container.root.style.width = '100vw';

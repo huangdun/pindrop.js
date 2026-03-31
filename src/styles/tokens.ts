@@ -42,9 +42,11 @@ export function avatarColor(name: string): string {
 
 /** Comment-mode cursor (Lucide message-circle-plus, hotspot at bottom-left tail). */
 export const COMMENT_CURSOR = (() => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${PIN_COLOR}" stroke="${PIN_COLOR}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${PIN_BUBBLE_PATH}"/><path d="M8 12h8" stroke="${WHITE}" fill="none"/><path d="M12 8v8" stroke="${WHITE}" fill="none"/></svg>`;
-  const b64 = typeof btoa === 'function' ? btoa(svg) : svg;
-  return `url("data:image/svg+xml;base64,${b64}") 2 22, crosshair`;
+  const svg1x = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${PIN_COLOR}" stroke="${PIN_COLOR}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${PIN_BUBBLE_PATH}"/><path d="M8 12h8" stroke="${WHITE}" fill="none"/><path d="M12 8v8" stroke="${WHITE}" fill="none"/></svg>`;
+  const svg2x = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="${PIN_COLOR}" stroke="${PIN_COLOR}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${PIN_BUBBLE_PATH}"/><path d="M8 12h8" stroke="${WHITE}" fill="none"/><path d="M12 8v8" stroke="${WHITE}" fill="none"/></svg>`;
+  const b64_1x = typeof btoa === 'function' ? btoa(svg1x) : svg1x;
+  const b64_2x = typeof btoa === 'function' ? btoa(svg2x) : svg2x;
+  return `-webkit-image-set(url("data:image/svg+xml;base64,${b64_1x}") 1x, url("data:image/svg+xml;base64,${b64_2x}") 2x) 2 22, url("data:image/svg+xml;base64,${b64_1x}") 2 22, crosshair`;
 })();
 
 /** Bot icon SVG (inline, 12x12) for agent badge. */
@@ -53,5 +55,7 @@ export const ICON_AGENT = `<svg width="12" height="12" viewBox="0 0 24 24" fill=
 /** Generate inline SVG for a pin with a number inside the bubble.
  *  Circle center is at (12, 11) in the 24x24 viewBox. */
 export function pinSvgHtml(color: string, number: number | string, textColor: string = WHITE): string {
-  return `<svg width="${PIN_SIZE}" height="${PIN_SIZE}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="${PIN_BUBBLE_PATH}" fill="${color}"/><text x="12" y="12" text-anchor="middle" dominant-baseline="central" fill="${textColor}" font-size="10" font-weight="600" font-family="${FONT_FAMILY}">${number}</text></svg>`;
+  // We use an absolutely positioned HTML element overlay to hold the number
+  // because Safari has a notorious bug dropping SVG <text> nodes inside Shadow DOM dynamically.
+  return `<div style="position:relative;width:100%;height:100%;"><svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0;"><path d="${PIN_BUBBLE_PATH}" fill="${color}"/></svg><div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${textColor};font-size:14px;font-weight:600;font-family:${FONT_FAMILY};line-height:1;pointer-events:none;box-sizing:border-box;">${number}</div></div>`;
 }
