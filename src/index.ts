@@ -7,6 +7,7 @@ import { createContainer, destroyContainer, type ContainerElements } from './ui/
 import { PinRenderer } from './ui/pins';
 import { Toolbar } from './ui/toolbar';
 import { Popover } from './ui/popover';
+import { BottomSheet } from './ui/bottom-sheet';
 import { Sidebar } from './ui/sidebar';
 import { NamePrompt } from './ui/name-prompt';
 import { ConfirmModal } from './ui/confirm-modal';
@@ -18,6 +19,7 @@ import { exportComments, importComments, openFilePicker } from './io/file';
 import { mergeComments } from './io/merge';
 import { detectTheme, applyTheme } from './styles/theme';
 import { PIN_COLOR, COMMENT_CURSOR, pinSvgHtml } from './styles/tokens';
+import { addSwipeToDismiss } from './ui/swipe';
 
 class PindropLayer {
   private events: EventEmitter;
@@ -26,6 +28,7 @@ class PindropLayer {
   private pinRenderer: PinRenderer;
   private toolbar: Toolbar;
   private popover: Popover;
+  private sheet!: BottomSheet;
   private sidebar: Sidebar;
   private namePrompt: NamePrompt;
   private confirmModal: ConfirmModal;
@@ -119,8 +122,8 @@ class PindropLayer {
       },
       onPinDragStart: (commentId) => {
         // Remember if this pin's popover was open before the drag
-        this._dragWasPopoverOpen = this.popover.getCurrentCommentId() === commentId;
-        this.popover.hide();
+        this._dragWasPopoverOpen = this.getViewerCommentId() === commentId;
+        this.hideViewer();
       },
       onPinDragEnd: (commentId) => {
         // Only re-open the popover if it was open before the drag started
@@ -128,7 +131,7 @@ class PindropLayer {
           const comment = this.store.getComment(commentId);
           if (comment) {
             const pos = resolveAnchorPosition(comment.anchor);
-            this.popover.show(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
+            this.showViewer(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
             this.pinRenderer.setActiveComment(commentId);
             this.sidebar.setActiveComment(commentId);
           }
@@ -152,6 +155,30 @@ class PindropLayer {
     });
     this.popover.setReadOnly(this.options.readOnly);
     if (this.currentUser) this.popover.setUser(this.currentUser);
+
+    // Bottom sheet (mobile popover alternative)
+    this.sheet = new BottomSheet(this.container.shadowContent, {
+      onReply: (commentId, text) => this.handleAddReply(commentId, text),
+      onResolve: (commentId) => this.handleResolveComment(commentId),
+      onReopen: (commentId) => this.handleReopenComment(commentId),
+      onDelete: (commentId) => this.handleDeleteComment(commentId),
+      onMarkUnread: (commentId) => this.markUnread(commentId),
+      onEditComment: (commentId, text) => this.editComment(commentId, text),
+      onEditReply: (commentId, replyId, text) => this.editReply(commentId, replyId, text),
+      onDeleteReply: (commentId, replyId) => this.deleteReply(commentId, replyId),
+      onClose: () => {
+        this.pinRenderer.setActiveComment(null);
+        this.sidebar.setActiveComment(null);
+        // On mobile in review mode, reopen the sidebar list rather than just restoring the toolbar
+        if (this.isMobile() && this.mode === 'review') {
+          this.sidebar.show(true);
+        } else {
+          this.toolbar.setVisible(true);
+        }
+      },
+    });
+    this.sheet.setReadOnly(this.options.readOnly);
+    if (this.currentUser) this.sheet.setUser(this.currentUser);
 
     // Toolbar
     this.toolbar = new Toolbar({
@@ -177,6 +204,7 @@ class PindropLayer {
       onExport: () => this.handleExport(),
       onImport: () => this.handleImport(),
       onSwitchSide: () => this.handleSidebarSwitch(),
+      onClose: () => this.setMode('view'),
     });
     this.sidebar.render(this.container.shadowContent, this.options.position);
     this.sidebar.setReadOnly(this.options.readOnly);
@@ -222,6 +250,34 @@ class PindropLayer {
     return result;
   }
 
+  private isMobile(): boolean {
+    return window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 480;
+  }
+
+  private showViewer(comment: Comment, pos: { x: number; y: number }): void {
+    if (this.isMobile()) {
+      this.popover.hide();
+      this.sheet.show(comment, pos);
+      this.toolbar.setVisible(false);
+    } else {
+      this.sheet.hide();
+      this.popover.show(comment, pos);
+    }
+  }
+
+  private hideViewer(): void {
+    this.popover.hide();
+    this.sheet.hide();
+  }
+
+  private isViewerVisible(): boolean {
+    return this.popover.isVisible() || this.sheet.isVisible();
+  }
+
+  private getViewerCommentId(): string | null {
+    return this.popover.getCurrentCommentId() ?? this.sheet.getCurrentCommentId();
+  }
+
   destroy(): void {
     this.keyboard.detach();
     this.tracker.stop();
@@ -238,6 +294,7 @@ class PindropLayer {
   setUser(user: { name: string }): void {
     this.currentUser = user.name;
     this.popover.setUser(user.name);
+    this.sheet.setUser(user.name);
   }
 
   on<E extends PindropEvent>(event: E, callback: (payload: PindropEventMap[E]) => void): () => void {
@@ -322,9 +379,9 @@ class PindropLayer {
     this.store.addReply(options.commentId, reply);
     this.sidebar.update(this.getVisibleComments());
 
-    if (this.popover.getCurrentCommentId() === options.commentId) {
+    if (this.getViewerCommentId() === options.commentId) {
       const pos = resolveAnchorPosition(parent.anchor);
-      this.popover.show(parent, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
+      this.showViewer(parent, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
     }
     return reply;
   }
@@ -417,14 +474,14 @@ class PindropLayer {
     this.store.reopenComment(commentId);
     this.refreshUI();
     
-    if (this.popover.getCurrentCommentId() === commentId) {
+    if (this.getViewerCommentId() === commentId) {
       const comment = this.store.getComment(commentId)!;
       if (this.isCommentVisible(comment)) {
         const pos = resolveAnchorPosition(comment.anchor);
-        this.popover.show(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
+        this.showViewer(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
         this.pinRenderer.setActiveComment(commentId);
       } else {
-        this.popover.hide();
+        this.hideViewer();
         this.pinRenderer.setActiveComment(null);
         this.sidebar.setActiveComment(null);
       }
@@ -434,8 +491,8 @@ class PindropLayer {
   deleteComment(commentId: string): void {
     if (!this.store.getComment(commentId)) return;
     this.store.deleteComment(commentId);
-    if (this.popover.getCurrentCommentId() === commentId) {
-      this.popover.hide();
+    if (this.getViewerCommentId() === commentId) {
+      this.hideViewer();
     }
     this.refreshUI();
   }
@@ -452,7 +509,9 @@ class PindropLayer {
     this.container.pinContainer.style.display = mode !== 'view' ? '' : 'none';
     // Sidebar: visible in review mode only
     if (mode === 'review') {
-      this.sidebar.show();
+      const mobile = this.isMobile();
+      this.sidebar.show(mobile);
+      if (mobile) this.toolbar.setVisible(false);
     } else {
       this.sidebar.hide();
     }
@@ -464,14 +523,16 @@ class PindropLayer {
     // Clean up when leaving comment mode
     if (prev === 'comment' && mode !== 'comment') {
       this.clearHighlight();
-      this.popover.hide();
+      this.hideViewer();
       this.dismissNewComment();
+      this.toolbar.setVisible(true);
     }
     // Close popover when entering view (no pins visible)
     if (mode === 'view') {
-      this.popover.hide();
+      this.hideViewer();
       this.pinRenderer.setActiveComment(null);
       this.sidebar.setActiveComment(null);
+      this.toolbar.setVisible(true);
     }
   }
 
@@ -527,6 +588,7 @@ class PindropLayer {
       this.currentUser = await this.namePrompt.prompt(this.options.storageKey);
       if (!this.currentUser) return;
       this.popover.setUser(this.currentUser);
+      this.sheet.setUser(this.currentUser);
     }
 
     const pageX = e.clientX + window.scrollX;
@@ -538,8 +600,13 @@ class PindropLayer {
   }
 
   private showNewCommentPopover(anchor: ReturnType<typeof createAnchor>, target: Element, position: { x: number; y: number }): void {
-    this.popover.hide();
+    this.hideViewer();
     this.dismissNewComment();
+
+    if (this.isMobile()) {
+      this.showMobileNewCommentSheet(anchor, target, position);
+      return;
+    }
 
     // Hide the overlay so it can't intercept clicks on the comment box
     this.container.overlay.style.display = 'none';
@@ -674,10 +741,118 @@ class PindropLayer {
     }
   }
 
+  private showMobileNewCommentSheet(anchor: ReturnType<typeof createAnchor>, target: Element, position: { x: number; y: number }): void {
+    this.container.overlay.style.display = 'none';
+    this.container.root.style.width = '100vw';
+    this.container.root.style.height = '100vh';
+    this.container.root.style.pointerEvents = 'none';
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;pointer-events:none;z-index:2;';
+
+    // Pin at tap position
+    const pin = document.createElement('div');
+    pin.className = 'pindrop-new-pin';
+    pin.style.left = `${position.x}px`;
+    pin.style.top = `${position.y}px`;
+    pin.innerHTML = pinSvgHtml(PIN_COLOR, this.getVisibleComments().length + 1);
+
+    // Scrim
+    const scrim = document.createElement('div');
+    scrim.className = 'pindrop-sheet-scrim';
+    scrim.style.pointerEvents = 'auto';
+    scrim.addEventListener('click', () => {
+      this.dismissNewComment();
+      this.toolbar.setVisible(true);
+    });
+
+    // Sheet
+    const sheet = document.createElement('div');
+    sheet.className = 'pindrop-sheet';
+    sheet.style.pointerEvents = 'auto';
+
+    const handle = document.createElement('div');
+    handle.className = 'pindrop-sheet-handle';
+    const pill = document.createElement('div');
+    pill.className = 'pindrop-sheet-handle-pill';
+    handle.appendChild(pill);
+
+    const inputArea = document.createElement('div');
+    inputArea.style.cssText = 'padding:12px 16px 16px;';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'pindrop-input-wrap';
+
+    const textarea = document.createElement('textarea');
+    textarea.placeholder = 'Add a comment...';
+    textarea.rows = 1;
+
+    const btn = document.createElement('button');
+    btn.className = 'pindrop-send-btn';
+    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>`;
+    btn.disabled = true;
+
+    textarea.addEventListener('input', () => {
+      const hasContent = !!textarea.value.trim();
+      btn.disabled = !hasContent;
+      wrap.classList.toggle('has-content', hasContent);
+      textarea.style.height = 'auto';
+      textarea.style.height = hasContent ? `${textarea.scrollHeight}px` : '';
+    });
+
+    const save = () => {
+      if (!textarea.value.trim()) return;
+      const now = new Date().toISOString();
+      const comment: Comment = {
+        id: crypto.randomUUID(),
+        anchor,
+        scope: this.options.getScope?.(target),
+        author: this.currentUser!,
+        text: textarea.value.trim(),
+        createdAt: now,
+        updatedAt: now,
+        resolved: false,
+        unread: false,
+        replies: [],
+      };
+      this.store.addComment(comment);
+      this.refreshUI();
+      this.dismissNewComment();
+      this.toolbar.setVisible(true);
+    };
+
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && textarea.value.trim()) {
+        e.preventDefault();
+        save();
+      }
+      if (e.key === 'Escape') {
+        this.dismissNewComment();
+        this.toolbar.setVisible(true);
+      }
+      e.stopPropagation();
+    });
+    btn.addEventListener('click', (e) => { e.stopPropagation(); save(); });
+
+    wrap.append(textarea, btn);
+    inputArea.appendChild(wrap);
+    addSwipeToDismiss(handle, sheet, () => {
+      this.dismissNewComment();
+      this.toolbar.setVisible(true);
+    });
+    sheet.append(handle, inputArea);
+    wrapper.append(scrim, pin, sheet);
+    this.container.shadowContent.appendChild(wrapper);
+    this.newCommentEl = wrapper;
+    this.newCommentAnchor = anchor;
+    this.newCommentScope = this.options.getScope?.(target);
+    this.toolbar.setVisible(false);
+  }
+
   private onPinClick(commentId: string): void {
-    // Toggle: clicking the same pin again closes the popover
-    if (this.popover.getCurrentCommentId() === commentId) {
-      this.popover.hide();
+    // Toggle: clicking the same pin again closes the viewer
+    if (this.getViewerCommentId() === commentId) {
+      this.hideViewer();
       this.pinRenderer.setActiveComment(null);
       this.sidebar.setActiveComment(null);
       return;
@@ -702,7 +877,7 @@ class PindropLayer {
     }
 
     const pos = resolveAnchorPosition(comment.anchor);
-    this.popover.show(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
+    this.showViewer(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
     this.pinRenderer.setActiveComment(commentId);
     this.sidebar.setActiveComment(commentId);
   }
@@ -730,6 +905,7 @@ class PindropLayer {
       this.currentUser = await this.namePrompt.prompt(this.options.storageKey);
       if (!this.currentUser) return;
       this.popover.setUser(this.currentUser);
+      this.sheet.setUser(this.currentUser);
     }
 
     const now = new Date().toISOString();
@@ -741,11 +917,11 @@ class PindropLayer {
       updatedAt: now,
     });
 
-    // Re-show popover with updated data
+    // Re-show viewer with updated data
     const comment = this.store.getComment(commentId);
     if (comment) {
       const pos = resolveAnchorPosition(comment.anchor);
-      this.popover.show(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
+      this.showViewer(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
     }
     this.sidebar.update(this.getVisibleComments());
   }
@@ -755,6 +931,7 @@ class PindropLayer {
       this.currentUser = await this.namePrompt.prompt(this.options.storageKey);
       if (!this.currentUser) return;
       this.popover.setUser(this.currentUser);
+      this.sheet.setUser(this.currentUser);
     }
     this.store.resolveComment(commentId, this.currentUser);
     this.refreshUI();
@@ -764,18 +941,18 @@ class PindropLayer {
     this.store.reopenComment(commentId);
     this.refreshUI();
 
-    // Re-show popover with updated state
+    // Re-show viewer with updated state
     const comment = this.store.getComment(commentId);
     if (comment) {
       const pos = resolveAnchorPosition(comment.anchor);
-      this.popover.show(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
+      this.showViewer(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
       this.pinRenderer.setActiveComment(commentId);
     }
   }
 
   private handleDeleteComment(commentId: string): void {
     this.store.deleteComment(commentId);
-    this.popover.hide();
+    this.hideViewer();
     this.refreshUI();
   }
 
@@ -790,11 +967,11 @@ class PindropLayer {
 
   private deleteReply(commentId: string, replyId: string): void {
     this.store.deleteReply(commentId, replyId);
-    // Re-show popover with updated data
+    // Re-show viewer with updated data
     const comment = this.store.getComment(commentId);
     if (comment) {
       const pos = resolveAnchorPosition(comment.anchor);
-      this.popover.show(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
+      this.showViewer(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
       this.pinRenderer.setActiveComment(commentId);
     }
   }
@@ -816,8 +993,8 @@ class PindropLayer {
   }
 
   private onEscape(): void {
-    if (this.popover.isVisible()) {
-      this.popover.hide();
+    if (this.isViewerVisible()) {
+      this.hideViewer();
       this.pinRenderer.setActiveComment(null);
       this.sidebar.setActiveComment(null);
     } else if (this.mode !== 'view') {
@@ -855,6 +1032,7 @@ class PindropLayer {
     if (!name) return;
     this.currentUser = name;
     this.popover.setUser(name);
+    this.sheet.setUser(name);
   }
 
   private async handleClearAll(): Promise<void> {
@@ -868,7 +1046,7 @@ class PindropLayer {
     });
     if (!confirmed) return;
     this.store.clear();
-    this.popover.hide();
+    this.hideViewer();
     this.refreshUI();
   }
 
@@ -899,11 +1077,11 @@ class PindropLayer {
     this.sidebar.update(comments);
     this.toolbar.setCommentCount(comments.length);
 
-    const activeCommentId = this.popover.getCurrentCommentId();
+    const activeCommentId = this.getViewerCommentId();
     if (activeCommentId) {
       const activeComment = this.store.getComment(activeCommentId);
       if (!activeComment || !this.isCommentVisible(activeComment)) {
-        this.popover.hide();
+        this.hideViewer();
         this.pinRenderer.setActiveComment(null);
         this.sidebar.setActiveComment(null);
       }
@@ -911,15 +1089,17 @@ class PindropLayer {
   }
 
   private updatePopoverPositions(): void {
-    // Existing comment popover
-    const commentId = this.popover.getCurrentCommentId();
+    // Existing comment viewer
+    const commentId = this.getViewerCommentId();
     if (commentId) {
       const comment = this.store.getComment(commentId);
       if (comment && this.isCommentVisible(comment)) {
-        const pos = resolveAnchorPosition(comment.anchor);
-        this.popover.updatePosition({ x: pos.x - window.scrollX, y: pos.y - window.scrollY });
+        if (!this.isMobile()) {
+          const pos = resolveAnchorPosition(comment.anchor);
+          this.popover.updatePosition({ x: pos.x - window.scrollX, y: pos.y - window.scrollY });
+        }
       } else {
-        this.popover.hide();
+        this.hideViewer();
         this.pinRenderer.setActiveComment(null);
         this.sidebar.setActiveComment(null);
       }

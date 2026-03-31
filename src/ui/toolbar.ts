@@ -388,6 +388,10 @@ export class Toolbar {
     this.importBtn.style.display = readOnly ? 'none' : '';
   }
 
+  setVisible(visible: boolean): void {
+    this.el.style.display = visible ? '' : 'none';
+  }
+
   destroy(): void {
     this.hideMenu();
     this.el.remove();

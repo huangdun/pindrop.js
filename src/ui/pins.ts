@@ -29,8 +29,24 @@ export class PinRenderer {
   }
 
   setActiveComment(commentId: string | null): void {
+    if (this.activeCommentId) {
+      const prev = this.pins.get(this.activeCommentId);
+      if (prev) this.applyActiveStyle(prev, false);
+    }
     this.activeCommentId = commentId;
     if (this.mode === 'review') this.updatePinVisibility();
+    if (commentId) {
+      const pin = this.pins.get(commentId);
+      if (pin) this.applyActiveStyle(pin, true);
+    }
+  }
+
+  private applyActiveStyle(pin: HTMLDivElement, active: boolean): void {
+    const filter = active
+      ? `drop-shadow(1px 0 0 ${PIN_COLOR}) drop-shadow(-1px 0 0 ${PIN_COLOR}) drop-shadow(0 1px 0 ${PIN_COLOR}) drop-shadow(0 -1px 0 ${PIN_COLOR}) ${DROP_SHADOW_PIN}`
+      : DROP_SHADOW_PIN;
+    pin.style.setProperty('filter', filter, 'important');
+    pin.style.setProperty('z-index', `${active ? this.options.zIndex + 1 : this.options.zIndex}`, 'important');
   }
 
   setMode(mode: PindropMode): void {
@@ -60,6 +76,10 @@ export class PinRenderer {
     comments.forEach((comment, index) => {
       this.renderPin(comment, index + 1);
     });
+    if (this.activeCommentId) {
+      const pin = this.pins.get(this.activeCommentId);
+      if (pin) this.applyActiveStyle(pin, true);
+    }
   }
 
   renderPin(comment: Comment, number: number): void {

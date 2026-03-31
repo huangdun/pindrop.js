@@ -33,7 +33,9 @@
 .pindrop-sidebar *,
 .pindrop-name-overlay *,
 .pindrop-new-comment-box *,
-.pindrop-new-pin * {
+.pindrop-new-pin *,
+.pindrop-sheet *,
+.pindrop-sheet-scrim * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -463,6 +465,32 @@
   background: var(--pindrop-bg-secondary);
 }
 
+/* Sidebar sheet override (mobile review mode) */
+.pindrop-sidebar.pindrop-sidebar-sheet {
+  top: auto !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 80vh !important;
+  border-radius: 16px 16px 0 0 !important;
+  resize: none;
+  animation: pindrop-sheet-in 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.pindrop-sidebar.pindrop-sidebar-sheet .pindrop-sidebar-resizer {
+  display: none;
+}
+
+.pindrop-sidebar .pindrop-sidebar-sheet-handle {
+  display: none;
+}
+
+.pindrop-sidebar.pindrop-sidebar-sheet .pindrop-sidebar-sheet-handle {
+  display: flex;
+}
+
 /* Sidebar */
 /* Sidebar — Figma UI3 comment sidebar */
 .pindrop-sidebar {
@@ -879,6 +907,7 @@
   position: fixed;
   box-sizing: border-box;
   width: 280px;
+  max-width: calc(100vw - 16px);
   background: var(--pindrop-bg);
   border-radius: var(--pindrop-radius);
   box-shadow: var(--pindrop-shadow);
@@ -1029,4 +1058,68 @@
 
 .pindrop-comment-input:focus {
   box-shadow: 0 0 0 1px var(--pindrop-pin-color);
+}
+
+/* Bottom sheet (mobile) */
+.pindrop-sheet-scrim {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 2;
+}
+.pindrop-sheet-scrim.pindrop-sheet-closing {
+  animation: pindrop-scrim-out 0.2s ease-in forwards;
+}
+.pindrop-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 70vh;
+  background: var(--pindrop-bg);
+  border-radius: 16px 16px 0 0;
+  box-shadow: var(--pindrop-shadow);
+  font-family: var(--pindrop-font-family);
+  color: var(--pindrop-text);
+  font-size: 13px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: pindrop-sheet-in 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.pindrop-sheet.pindrop-sheet-closing {
+  animation: pindrop-sheet-out 0.2s ease-in forwards;
+}
+.pindrop-sheet-handle {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 4px;
+  flex-shrink: 0;
+}
+.pindrop-sheet-handle-pill {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--pindrop-border);
+}
+.pindrop-sheet-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+@keyframes pindrop-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes pindrop-sheet-out {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+@keyframes pindrop-scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pindrop-scrim-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }

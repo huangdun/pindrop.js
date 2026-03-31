@@ -1,11 +1,13 @@
 import type { Comment } from '../core/types';
 import { ICON_AGENT } from '../styles/tokens';
+import { addSwipeToDismiss } from './swipe';
 
 export interface SidebarCallbacks {
   onCommentClick: (commentId: string) => void;
   onExport: () => void;
   onImport: () => void;
   onSwitchSide: () => void;
+  onClose?: () => void;
 }
 
 type FilterMode = 'all' | 'open' | 'resolved';
@@ -14,6 +16,7 @@ const svg16 = (inner: string) => `<svg width="16" height="16" viewBox="0 0 24 24
 // panel-left-open / panel-right-open
 const ICON_TO_LEFT = svg16(`<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9-3 3 3 3"/>`);
 const ICON_TO_RIGHT = svg16(`<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m10 15 3-3-3-3"/>`);
+const ICON_CLOSE = svg16(`<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`);
 
 export class Sidebar {
   private el!: HTMLDivElement;
@@ -31,6 +34,9 @@ export class Sidebar {
   private currentWidth = 240;
   private isDragging = false;
   private storageKey: string | null = null;
+  private shadowContent!: HTMLDivElement;
+  private scrim: HTMLDivElement | null = null;
+  private handle!: HTMLDivElement;
 
   constructor(private callbacks: SidebarCallbacks) { }
 
@@ -53,11 +59,20 @@ export class Sidebar {
   }
 
   render(shadowContent: HTMLDivElement, position: 'left' | 'right'): void {
+    this.shadowContent = shadowContent;
     this.position = position;
     this.el = document.createElement('div');
     this.el.className = `pindrop-sidebar pindrop-sidebar-${position}`;
     this.el.style.pointerEvents = 'auto';
     this.el.style.width = `${this.currentWidth}px`;
+
+    // Swipe handle (shown only in mobile sheet mode)
+    this.handle = document.createElement('div');
+    this.handle.className = 'pindrop-sheet-handle pindrop-sidebar-sheet-handle';
+    const pill = document.createElement('div');
+    pill.className = 'pindrop-sheet-handle-pill';
+    this.handle.appendChild(pill);
+    this.el.appendChild(this.handle);
 
     // Resizer
     this.resizer = document.createElement('div');
@@ -110,13 +125,38 @@ export class Sidebar {
     this.renderList();
   }
 
-  show(): void {
+  show(mobile = false): void {
     this.visible = true;
+    if (mobile) {
+      this.el.classList.add('pindrop-sidebar-sheet');
+      this.switchBtn.innerHTML = ICON_CLOSE;
+      this.switchBtn.title = 'Close';
+      this.switchBtn.style.display = '';
+      this.switchBtn.onclick = () => { this.hide(); this.callbacks.onClose?.(); };
+      addSwipeToDismiss(this.handle, this.el, () => { this.hide(); this.callbacks.onClose?.(); });
+      if (!this.scrim) {
+        this.scrim = document.createElement('div');
+        this.scrim.className = 'pindrop-sheet-scrim';
+        this.scrim.addEventListener('click', () => {
+          this.hide();
+          this.callbacks.onClose?.();
+        });
+        this.shadowContent.insertBefore(this.scrim, this.el);
+      }
+    }
     this.el.style.display = '';
   }
 
   hide(): void {
     this.visible = false;
+    if (this.el.classList.contains('pindrop-sidebar-sheet')) {
+      this.el.classList.remove('pindrop-sidebar-sheet');
+      this.switchBtn.innerHTML = this.position === 'right' ? ICON_TO_LEFT : ICON_TO_RIGHT;
+      this.switchBtn.title = this.position === 'right' ? 'Move to left' : 'Move to right';
+      this.switchBtn.onclick = null;
+      this.scrim?.remove();
+      this.scrim = null;
+    }
     this.el.style.display = 'none';
   }
 
