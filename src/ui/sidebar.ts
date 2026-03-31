@@ -73,6 +73,10 @@ export class Sidebar {
     pill.className = 'pindrop-sheet-handle-pill';
     this.handle.appendChild(pill);
     this.el.appendChild(this.handle);
+    addSwipeToDismiss(this.handle, this.el, (isSwipe) => {
+      this.hide(isSwipe);
+      this.callbacks.onClose?.();
+    });
 
     // Resizer
     this.resizer = document.createElement('div');
@@ -133,7 +137,6 @@ export class Sidebar {
       this.switchBtn.title = 'Close';
       this.switchBtn.style.display = '';
       this.switchBtn.onclick = () => { this.hide(); this.callbacks.onClose?.(); };
-      addSwipeToDismiss(this.handle, this.el, (isSwipe) => { this.hide(isSwipe); this.callbacks.onClose?.(); });
       if (!this.scrim) {
         this.scrim = document.createElement('div');
         this.scrim.className = 'pindrop-sheet-scrim';
@@ -170,6 +173,8 @@ export class Sidebar {
         document.body.style.overflow = '';
         document.documentElement.style.overflow = '';
         this.el.style.display = 'none';
+        this.el.style.transform = '';
+        this.el.style.transition = '';
       };
 
       if (isSwipe) {
