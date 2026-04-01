@@ -170,8 +170,10 @@ export class Sidebar {
         this.el.classList.remove('pindrop-sidebar-sheet');
         this.scrim?.remove();
         this.scrim = null;
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
+        if (!this.shadowContent.querySelector('.pindrop-sheet, .pindrop-sidebar-sheet')) {
+          document.body.style.overflow = '';
+          document.documentElement.style.overflow = '';
+        }
         this.el.style.display = 'none';
         this.el.style.transform = '';
         this.el.style.transition = '';

@@ -223,8 +223,10 @@ export class BottomSheet {
     setTimeout(() => {
       el.remove();
       scrim?.remove();
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
+      if (!this.shadowContent.querySelector('.pindrop-sheet, .pindrop-sidebar-sheet')) {
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
     }, 220);
   }
 

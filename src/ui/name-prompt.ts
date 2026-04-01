@@ -65,8 +65,10 @@ export class NamePrompt {
         const finish = () => {
           overlay.remove();
           if (mobile) {
-            document.body.style.overflow = '';
-            document.documentElement.style.overflow = '';
+            if (!this.shadowContent.querySelector('.pindrop-sheet, .pindrop-sidebar-sheet')) {
+              document.body.style.overflow = '';
+              document.documentElement.style.overflow = '';
+            }
           }
           resolve(nameToResolve);
         };

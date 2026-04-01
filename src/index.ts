@@ -732,9 +732,13 @@ class PindropLayer {
 
   private dismissNewComment(): void {
     if (this.newCommentEl) {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
       this.newCommentEl.remove();
+      if (this.isMobile()) {
+        if (!this.container.shadowContent.querySelector('.pindrop-sheet, .pindrop-sidebar-sheet')) {
+          document.body.style.overflow = '';
+          document.documentElement.style.overflow = '';
+        }
+      }
       this.newCommentEl = null;
       this.newCommentAnchor = null;
       this.newCommentScope = undefined;
