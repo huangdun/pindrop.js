@@ -1,4 +1,5 @@
 import { addSwipeToDismiss } from './swipe';
+import { lockPageScroll, unlockPageScroll } from './scroll-lock';
 
 const svg16 = (inner: string) => `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
 const ICON_CLOSE = svg16(`<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`);
@@ -50,8 +51,7 @@ export class NamePrompt {
       if (mobile) {
         modal.style.width = 'auto'; // override the 360px default from pindrop-name-modal
         overlay.style.touchAction = 'none';
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
+        lockPageScroll();
 
         handle = document.createElement('div');
         handle.className = 'pindrop-sheet-handle';
@@ -66,8 +66,7 @@ export class NamePrompt {
           overlay.remove();
           if (mobile) {
             if (!this.shadowContent.querySelector('.pindrop-sheet, .pindrop-sidebar-sheet')) {
-              document.body.style.overflow = '';
-              document.documentElement.style.overflow = '';
+              unlockPageScroll();
             }
           }
           resolve(nameToResolve);

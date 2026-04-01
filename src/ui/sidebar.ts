@@ -1,6 +1,7 @@
 import type { Comment } from '../core/types';
 import { ICON_AGENT } from '../styles/tokens';
 import { addSwipeToDismiss } from './swipe';
+import { lockPageScroll, unlockPageScroll } from './scroll-lock';
 
 export interface SidebarCallbacks {
   onCommentClick: (commentId: string) => void;
@@ -147,8 +148,7 @@ export class Sidebar {
         });
         this.shadowContent.insertBefore(this.scrim, this.el);
       }
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
+      lockPageScroll();
     }
     this.el.style.display = '';
   }
@@ -171,8 +171,7 @@ export class Sidebar {
         this.scrim?.remove();
         this.scrim = null;
         if (!this.shadowContent.querySelector('.pindrop-sheet, .pindrop-sidebar-sheet')) {
-          document.body.style.overflow = '';
-          document.documentElement.style.overflow = '';
+          unlockPageScroll();
         }
         this.el.style.display = 'none';
         this.el.style.transform = '';
