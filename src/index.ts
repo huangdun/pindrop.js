@@ -57,9 +57,16 @@ class PindropLayer {
       ...opts,
     };
 
-    // Pre-set user if provided
+    // Pre-set user if provided or saved in local storage
     if (opts.user?.name) {
       this.currentUser = opts.user.name;
+    } else {
+      try {
+        const savedName = localStorage.getItem(`${this.options.storageKey}-name`);
+        if (savedName) this.currentUser = savedName;
+      } catch (e) {
+        // Ignore storage errors
+      }
     }
     // (popover.setUser is called after popover is constructed below)
 
