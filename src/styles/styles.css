@@ -14,6 +14,8 @@
   --pindrop-line-base: 20px;
   --pindrop-line-xs: 16px;
 
+  --pindrop-avatar-size: 24px;
+
   /* Typography scale */
   --pindrop-text-lg: 16px;
   --pindrop-text-base: 13px;
@@ -272,8 +274,8 @@
   position: absolute;
   left: 16px;
   top: 3px;
-  width: 24px;
-  height: 24px;
+  width: var(--pindrop-avatar-size);
+  height: var(--pindrop-avatar-size);
   border-radius: 9999px;
   background: var(--pindrop-pin-color);
   color: #fff;
@@ -438,8 +440,8 @@
 
 .pindrop-popover-avatar-small {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: var(--pindrop-avatar-size);
+  height: var(--pindrop-avatar-size);
   border-radius: 9999px;
   background: var(--pindrop-pin-color);
   color: #fff;
@@ -700,8 +702,8 @@
 
 .pindrop-sidebar-num {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: var(--pindrop-avatar-size);
+  height: var(--pindrop-avatar-size);
   border-radius: 9999px;
   background: var(--pindrop-pin-color);
   color: #fff;
@@ -1160,5 +1162,7 @@
     --pindrop-line-md: 26px;
     --pindrop-line-base: 24px;
     --pindrop-line-xs: 20px;
+
+    --pindrop-avatar-size: 28px;
   }
 }
