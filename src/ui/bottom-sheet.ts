@@ -203,7 +203,7 @@ export class BottomSheet {
     this.shadowContent.appendChild(this.el);
   }
 
-  showNewComment(position: { x: number; y: number }): void {
+  showNewComment(): void {
     this.hide();
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
@@ -278,7 +278,6 @@ export class BottomSheet {
       const text = textarea.value.trim();
       if (!text) return;
       this.callbacks.onSaveNewComment?.(text);
-      this.hide();
     };
 
     textarea.addEventListener('keydown', (e) => {
