@@ -2,6 +2,7 @@ import type { Comment } from '../core/types';
 import { avatarColor, ICON_AGENT } from '../styles/tokens';
 import type { PopoverCallbacks } from './popover';
 import { addSwipeToDismiss } from './swipe';
+import { lockPageScroll, unlockPageScroll } from './scroll-lock';
 
 // Lucide icon paths (24x24)
 const svgBtn = (inner: string) => `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
@@ -38,8 +39,7 @@ export class BottomSheet {
   show(comment: Comment, _position: { x: number; y: number }): void {
     this.hide();
     this.currentCommentId = comment.id;
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
+    lockPageScroll();
 
     // Scrim
     this.scrim = document.createElement('div');
@@ -205,8 +205,7 @@ export class BottomSheet {
 
   showNewComment(): void {
     this.hide();
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
+    lockPageScroll();
 
     // Scrim
     this.scrim = document.createElement('div');
@@ -328,8 +327,7 @@ export class BottomSheet {
       el.remove();
       scrim?.remove();
       if (!this.shadowContent.querySelector('.pindrop-sheet, .pindrop-sidebar-sheet')) {
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
+        unlockPageScroll();
       }
     }, 220);
   }
