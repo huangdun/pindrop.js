@@ -1,6 +1,6 @@
 {
   "name": "pindrop.js",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "Drop-in comment overlay for any web page. Pin comments, threaded replies, and share via JSON export/import.",
   "type": "module",
   "main": "dist/pindrop.umd.js",
