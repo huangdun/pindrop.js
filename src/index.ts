@@ -174,21 +174,7 @@ class PindropLayer {
       onEditReply: (commentId, replyId, text) => this.editReply(commentId, replyId, text),
       onDeleteReply: (commentId, replyId) => this.deleteReply(commentId, replyId),
       onSaveNewComment: (text) => {
-        if (!this.newCommentAnchor) return;
-        const now = new Date().toISOString();
-        const comment: Comment = {
-          id: crypto.randomUUID(),
-          anchor: this.newCommentAnchor,
-          scope: this.newCommentScope,
-          author: this.currentUser!,
-          text,
-          createdAt: now,
-          updatedAt: now,
-          resolved: false,
-          unread: false,
-          replies: [],
-        };
-        this.store.addComment(comment);
+        if (!this.createPendingComment(text)) return;
         this.refreshUI();
         this.dismissNewComment();
         this.toolbar.setVisible(true);
@@ -278,7 +264,8 @@ class PindropLayer {
   }
 
   private isMobile(): boolean {
-    return (window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 768) || window.innerWidth < 480;
+    const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+    return (coarsePointer && window.innerWidth < 768) || window.innerWidth < 480;
   }
 
   private showViewer(comment: Comment, pos: { x: number; y: number }): void {
@@ -635,9 +622,10 @@ class PindropLayer {
   private showNewCommentPopover(anchor: ReturnType<typeof createAnchor>, target: Element, position: { x: number; y: number }): void {
     this.hideViewer();
     this.dismissNewComment();
+    this.prepareNewComment(anchor, target);
 
     if (this.isMobile()) {
-      this.showMobileNewCommentSheet(anchor, target, position);
+      this.showMobileNewCommentSheet(position);
       return;
     }
 
@@ -653,9 +641,7 @@ class PindropLayer {
 
     // Expand the shadow host to full viewport so shadow DOM content is hit-testable
     // (A 0x0 host causes browsers to skip its shadow DOM during hit-testing)
-    this.container.root.style.width = '100vw';
-    this.container.root.style.height = '100vh';
-    this.container.root.style.pointerEvents = 'none';
+    this.expandShadowHost();
 
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;pointer-events:none;z-index:2;';
@@ -711,21 +697,7 @@ class PindropLayer {
     });
 
     const save = () => {
-      if (!textarea.value.trim()) return;
-      const now = new Date().toISOString();
-      const comment: Comment = {
-        id: crypto.randomUUID(),
-        anchor,
-        scope: this.newCommentScope,
-        author: this.currentUser!,
-        text: textarea.value.trim(),
-        createdAt: now,
-        updatedAt: now,
-        resolved: false,
-        unread: false,
-        replies: [],
-      };
-      this.store.addComment(comment);
+      if (!this.createPendingComment(textarea.value.trim())) return;
       this.refreshUI();
 
       box.classList.add('pindrop-saving');
@@ -767,28 +739,14 @@ class PindropLayer {
       this.newCommentEl.remove();
       this.newCommentEl = null;
     }
-    
-    if (this.newCommentAnchor) {
-      if (this.isMobile()) {
-        this.sheet.hide();
-      }
-      this.newCommentAnchor = null;
-      this.newCommentScope = undefined;
+
+    if (this.newCommentAnchor && this.isMobile() && this.sheet.isVisible()) {
+      this.sheet.hide();
     }
 
-    if (this.isMobile()) {
-      if (!this.container.shadowContent.querySelector('.pindrop-sheet, .pindrop-sidebar-sheet')) {
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-      }
-    }
-
-    // Restore the shadow host to 0x0
-    this.container.root.style.position = '';
-    this.container.root.style.inset = '';
-    this.container.root.style.width = '0';
-    this.container.root.style.height = '0';
-    this.container.root.style.pointerEvents = '';
+    this.newCommentAnchor = null;
+    this.newCommentScope = undefined;
+    this.resetShadowHost();
 
     // Restore the overlay if still in comment mode
     if (this.mode === 'comment') {
@@ -796,20 +754,9 @@ class PindropLayer {
     }
   }
 
-  private showMobileNewCommentSheet(anchor: ReturnType<typeof createAnchor>, target: Element, position: { x: number; y: number }): void {
+  private showMobileNewCommentSheet(position: { x: number; y: number }): void {
     this.container.overlay.style.display = 'none';
-    
-    // Expand shadow host to allow pin rendering, but don't force 100vh manually 
-    // if the sheet handles its own positioning. However, since the pin is at a 
-    // specific position, we need the host to be large enough. 
-    // Using inset: 0 on the host is safer than 100vw/vh if we want to avoid 
-    // distortion, but for now we'll just ensure it covers the viewport 
-    // without the zero-sized wrapper.
-    this.container.root.style.position = 'fixed';
-    this.container.root.style.inset = '0';
-    this.container.root.style.width = '100vw';
-    this.container.root.style.height = '100vh';
-    this.container.root.style.pointerEvents = 'none';
+    this.expandShadowHost();
 
     // Pin at tap position (direct child of shadowContent)
     const pin = document.createElement('div');
@@ -819,12 +766,53 @@ class PindropLayer {
     pin.innerHTML = pinSvgHtml(PIN_COLOR, this.getVisibleComments().length + 1);
 
     this.container.shadowContent.appendChild(pin);
-    this.newCommentEl = pin; // Track the pin for cleanup
+    this.newCommentEl = pin;
+
+    this.sheet.showNewComment();
+    this.toolbar.setVisible(false);
+  }
+
+  private prepareNewComment(anchor: ReturnType<typeof createAnchor>, target: Element): void {
     this.newCommentAnchor = anchor;
     this.newCommentScope = this.options.getScope?.(target);
+  }
 
-    this.sheet.showNewComment({ x: position.x, y: position.y });
-    this.toolbar.setVisible(false);
+  private createPendingComment(text: string): Comment | null {
+    const content = text.trim();
+    if (!content || !this.newCommentAnchor || !this.currentUser) return null;
+
+    const now = new Date().toISOString();
+    const comment: Comment = {
+      id: crypto.randomUUID(),
+      anchor: this.newCommentAnchor,
+      scope: this.newCommentScope,
+      author: this.currentUser,
+      text: content,
+      createdAt: now,
+      updatedAt: now,
+      resolved: false,
+      unread: false,
+      replies: [],
+    };
+
+    this.store.addComment(comment);
+    return comment;
+  }
+
+  private expandShadowHost(): void {
+    this.container.root.style.position = 'fixed';
+    this.container.root.style.inset = '0';
+    this.container.root.style.width = '100%';
+    this.container.root.style.height = '100%';
+    this.container.root.style.pointerEvents = 'none';
+  }
+
+  private resetShadowHost(): void {
+    this.container.root.style.position = '';
+    this.container.root.style.inset = '';
+    this.container.root.style.width = '0';
+    this.container.root.style.height = '0';
+    this.container.root.style.pointerEvents = '';
   }
 
   private onPinClick(commentId: string): void {
