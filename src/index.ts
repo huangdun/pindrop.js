@@ -194,6 +194,7 @@ class PindropLayer {
         this.toolbar.setVisible(true);
       },
       onClose: () => {
+        this.dismissNewComment();
         this.pinRenderer.setActiveComment(null);
         this.sidebar.setActiveComment(null);
         // On mobile in review mode, reopen the sidebar list rather than just restoring the toolbar
