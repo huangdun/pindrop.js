@@ -203,6 +203,111 @@ export class BottomSheet {
     this.shadowContent.appendChild(this.el);
   }
 
+  showNewComment(position: { x: number; y: number }): void {
+    this.hide();
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    // Scrim
+    this.scrim = document.createElement('div');
+    this.scrim.className = 'pindrop-sheet-scrim';
+    this.scrim.style.touchAction = 'none';
+    this.scrim.addEventListener('click', () => this.hide());
+
+    // Sheet
+    this.el = document.createElement('div');
+    this.el.className = 'pindrop-sheet';
+    this.el.style.pointerEvents = 'auto';
+
+    // Handle
+    const handle = document.createElement('div');
+    handle.className = 'pindrop-sheet-handle';
+    const pill = document.createElement('div');
+    pill.className = 'pindrop-sheet-handle-pill';
+    handle.appendChild(pill);
+    this.el.appendChild(handle);
+    addSwipeToDismiss(handle, this.el, (isSwipe) => this.hide(isSwipe));
+
+    // Titlebar
+    const titlebar = document.createElement('div');
+    titlebar.className = 'pindrop-popover-titlebar';
+
+    const titleLabel = document.createElement('span');
+    titleLabel.textContent = 'New Comment';
+    titlebar.appendChild(titleLabel);
+
+    const actions = document.createElement('div');
+    actions.className = 'pindrop-popover-titlebar-actions';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'pindrop-popover-titlebar-btn';
+    closeBtn.innerHTML = ICON_CLOSE;
+    closeBtn.title = 'Close';
+    closeBtn.setAttribute('aria-label', 'Close');
+    closeBtn.addEventListener('click', () => this.hide());
+    actions.appendChild(closeBtn);
+
+    titlebar.appendChild(actions);
+    this.el.appendChild(titlebar);
+
+    // Input Area
+    const inputArea = document.createElement('div');
+    inputArea.style.cssText = 'padding:12px 16px 16px;';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'pindrop-input-wrap';
+
+    const textarea = document.createElement('textarea');
+    textarea.placeholder = 'Add a comment...';
+    textarea.rows = 1;
+
+    const btn = document.createElement('button');
+    btn.className = 'pindrop-send-btn';
+    btn.innerHTML = ICON_SEND;
+    btn.disabled = true;
+
+    textarea.addEventListener('input', () => {
+      const hasContent = !!textarea.value.trim();
+      btn.disabled = !hasContent;
+      wrap.classList.toggle('has-content', hasContent);
+      textarea.style.height = 'auto';
+      textarea.style.height = hasContent ? `${textarea.scrollHeight}px` : '';
+    });
+
+    const save = () => {
+      const text = textarea.value.trim();
+      if (!text) return;
+      this.callbacks.onSaveNewComment?.(text);
+      this.hide();
+    };
+
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && textarea.value.trim()) {
+        e.preventDefault();
+        save();
+      }
+      if (e.key === 'Escape') {
+        this.hide();
+      }
+      e.stopPropagation();
+    });
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      save();
+    });
+
+    wrap.append(textarea, btn);
+    inputArea.appendChild(wrap);
+    this.el.appendChild(inputArea);
+
+    this.shadowContent.appendChild(this.scrim);
+    this.shadowContent.appendChild(this.el);
+
+    // Focus input after layout
+    setTimeout(() => textarea.focus(), 50);
+  }
+
   hide(isSwipe = false): void {
     if (!this.el) return;
 

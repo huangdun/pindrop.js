@@ -20,6 +20,7 @@ export interface PopoverCallbacks {
   onEditComment: (commentId: string, text: string) => void;
   onEditReply: (commentId: string, replyId: string, text: string) => void;
   onDeleteReply: (commentId: string, replyId: string) => void;
+  onSaveNewComment?: (text: string) => void;
   onClose?: () => void;
 }
 

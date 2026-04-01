@@ -173,6 +173,26 @@ class PindropLayer {
       onEditComment: (commentId, text) => this.editComment(commentId, text),
       onEditReply: (commentId, replyId, text) => this.editReply(commentId, replyId, text),
       onDeleteReply: (commentId, replyId) => this.deleteReply(commentId, replyId),
+      onSaveNewComment: (text) => {
+        if (!this.newCommentAnchor) return;
+        const now = new Date().toISOString();
+        const comment: Comment = {
+          id: crypto.randomUUID(),
+          anchor: this.newCommentAnchor,
+          scope: this.newCommentScope,
+          author: this.currentUser!,
+          text,
+          createdAt: now,
+          updatedAt: now,
+          resolved: false,
+          unread: false,
+          replies: [],
+        };
+        this.store.addComment(comment);
+        this.refreshUI();
+        this.dismissNewComment();
+        this.toolbar.setVisible(true);
+      },
       onClose: () => {
         this.pinRenderer.setActiveComment(null);
         this.sidebar.setActiveComment(null);
@@ -745,145 +765,65 @@ class PindropLayer {
   private dismissNewComment(): void {
     if (this.newCommentEl) {
       this.newCommentEl.remove();
-      if (this.isMobile()) {
-        if (!this.container.shadowContent.querySelector('.pindrop-sheet, .pindrop-sidebar-sheet')) {
-          document.body.style.overflow = '';
-          document.documentElement.style.overflow = '';
-        }
-      }
       this.newCommentEl = null;
+    }
+    
+    if (this.newCommentAnchor) {
+      if (this.isMobile()) {
+        this.sheet.hide();
+      }
       this.newCommentAnchor = null;
       this.newCommentScope = undefined;
+    }
 
-      // Restore the shadow host to 0x0
-      this.container.root.style.width = '0';
-      this.container.root.style.height = '0';
-      this.container.root.style.pointerEvents = '';
-
-      // Restore the overlay if still in comment mode
-      if (this.mode === 'comment') {
-        this.container.overlay.style.display = '';
+    if (this.isMobile()) {
+      if (!this.container.shadowContent.querySelector('.pindrop-sheet, .pindrop-sidebar-sheet')) {
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
       }
+    }
+
+    // Restore the shadow host to 0x0
+    this.container.root.style.position = '';
+    this.container.root.style.inset = '';
+    this.container.root.style.width = '0';
+    this.container.root.style.height = '0';
+    this.container.root.style.pointerEvents = '';
+
+    // Restore the overlay if still in comment mode
+    if (this.mode === 'comment') {
+      this.container.overlay.style.display = '';
     }
   }
 
   private showMobileNewCommentSheet(anchor: ReturnType<typeof createAnchor>, target: Element, position: { x: number; y: number }): void {
     this.container.overlay.style.display = 'none';
+    
+    // Expand shadow host to allow pin rendering, but don't force 100vh manually 
+    // if the sheet handles its own positioning. However, since the pin is at a 
+    // specific position, we need the host to be large enough. 
+    // Using inset: 0 on the host is safer than 100vw/vh if we want to avoid 
+    // distortion, but for now we'll just ensure it covers the viewport 
+    // without the zero-sized wrapper.
+    this.container.root.style.position = 'fixed';
+    this.container.root.style.inset = '0';
     this.container.root.style.width = '100vw';
     this.container.root.style.height = '100vh';
     this.container.root.style.pointerEvents = 'none';
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
 
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;pointer-events:none;z-index:2;';
-
-    // Pin at tap position
+    // Pin at tap position (direct child of shadowContent)
     const pin = document.createElement('div');
     pin.className = 'pindrop-new-pin';
     pin.style.left = `${position.x}px`;
     pin.style.top = `${position.y}px`;
     pin.innerHTML = pinSvgHtml(PIN_COLOR, this.getVisibleComments().length + 1);
 
-    // Scrim
-    const scrim = document.createElement('div');
-    scrim.className = 'pindrop-sheet-scrim';
-    scrim.style.pointerEvents = 'auto';
-    scrim.style.touchAction = 'none';
-    scrim.addEventListener('click', () => {
-      this.dismissNewComment();
-      this.toolbar.setVisible(true);
-    });
-
-    // Sheet
-    const sheet = document.createElement('div');
-    sheet.className = 'pindrop-sheet';
-    sheet.style.pointerEvents = 'auto';
-
-    const handle = document.createElement('div');
-    handle.className = 'pindrop-sheet-handle';
-    const pill = document.createElement('div');
-    pill.className = 'pindrop-sheet-handle-pill';
-    handle.appendChild(pill);
-
-    const inputArea = document.createElement('div');
-    inputArea.style.cssText = 'padding:12px 16px 16px;';
-
-    const wrap = document.createElement('div');
-    wrap.className = 'pindrop-input-wrap';
-
-    const textarea = document.createElement('textarea');
-    textarea.placeholder = 'Add a comment...';
-    textarea.rows = 1;
-
-    const btn = document.createElement('button');
-    btn.className = 'pindrop-send-btn';
-    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>`;
-    btn.disabled = true;
-
-    textarea.addEventListener('input', () => {
-      const hasContent = !!textarea.value.trim();
-      btn.disabled = !hasContent;
-      wrap.classList.toggle('has-content', hasContent);
-      textarea.style.height = 'auto';
-      textarea.style.height = hasContent ? `${textarea.scrollHeight}px` : '';
-    });
-
-    const save = () => {
-      if (!textarea.value.trim()) return;
-      const now = new Date().toISOString();
-      const comment: Comment = {
-        id: crypto.randomUUID(),
-        anchor,
-        scope: this.options.getScope?.(target),
-        author: this.currentUser!,
-        text: textarea.value.trim(),
-        createdAt: now,
-        updatedAt: now,
-        resolved: false,
-        unread: false,
-        replies: [],
-      };
-      this.store.addComment(comment);
-      this.refreshUI();
-      this.dismissNewComment();
-      this.toolbar.setVisible(true);
-    };
-
-    textarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && textarea.value.trim()) {
-        e.preventDefault();
-        save();
-      }
-      if (e.key === 'Escape') {
-        this.dismissNewComment();
-        this.toolbar.setVisible(true);
-      }
-      e.stopPropagation();
-    });
-    btn.addEventListener('click', (e) => { e.stopPropagation(); save(); });
-
-    wrap.append(textarea, btn);
-    inputArea.appendChild(wrap);
-    addSwipeToDismiss(handle, sheet, (isSwipe) => {
-      const dismiss = () => {
-        this.dismissNewComment();
-        this.toolbar.setVisible(true);
-      };
-      if (isSwipe) {
-        scrim.classList.add('pindrop-sheet-closing');
-        pin.classList.add('pindrop-saving'); // fade out pin
-        setTimeout(dismiss, 200);
-      } else {
-        dismiss();
-      }
-    });
-    sheet.append(handle, inputArea);
-    wrapper.append(scrim, pin, sheet);
-    this.container.shadowContent.appendChild(wrapper);
-    this.newCommentEl = wrapper;
+    this.container.shadowContent.appendChild(pin);
+    this.newCommentEl = pin; // Track the pin for cleanup
     this.newCommentAnchor = anchor;
     this.newCommentScope = this.options.getScope?.(target);
+
+    this.sheet.showNewComment({ x: position.x, y: position.y });
     this.toolbar.setVisible(false);
   }
 
