@@ -910,6 +910,9 @@ class PindropLayer {
     }
 
     const pos = resolveAnchorPosition(comment.anchor);
+    if (this.isMobile()) {
+      window.scrollTo({ top: Math.max(0, pos.y - window.innerHeight / 3), behavior: 'smooth' });
+    }
     this.showViewer(comment, { x: pos.x - window.scrollX, y: pos.y - window.scrollY });
     this.pinRenderer.setActiveComment(commentId);
     this.sidebar.setActiveComment(commentId);
