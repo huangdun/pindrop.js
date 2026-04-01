@@ -329,7 +329,10 @@ export class BottomSheet {
       });
     }
 
-    row.append(nameRow, body);
+    const contentWrap = document.createElement('div');
+    contentWrap.className = 'pindrop-popover-contentWrap';
+    contentWrap.append(nameRow, body);
+    row.appendChild(contentWrap);
 
     return row;
   }
@@ -458,7 +461,7 @@ export class BottomSheet {
 
     btnRow.append(cancelBtn, saveBtn);
     editContainer.append(textarea, btnRow);
-    row.appendChild(editContainer);
+    body.parentElement!.appendChild(editContainer);
 
     textarea.style.height = 'auto';
     textarea.style.height = `${textarea.scrollHeight}px`;

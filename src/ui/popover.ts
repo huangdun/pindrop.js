@@ -327,7 +327,10 @@ export class Popover {
       });
     }
 
-    row.append(nameRow, body);
+    const contentWrap = document.createElement('div');
+    contentWrap.className = 'pindrop-popover-contentWrap';
+    contentWrap.append(nameRow, body);
+    row.appendChild(contentWrap);
 
     return row;
   }
@@ -459,7 +462,7 @@ export class Popover {
 
     btnRow.append(cancelBtn, saveBtn);
     editContainer.append(textarea, btnRow);
-    row.appendChild(editContainer);
+    body.parentElement!.appendChild(editContainer);
 
     // Auto-size and focus
     textarea.style.height = 'auto';
