@@ -278,7 +278,8 @@ class PindropLayer {
   }
 
   private isMobile(): boolean {
-    return (window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 768) || window.innerWidth < 480;
+    const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+    return (coarsePointer && window.innerWidth < 768) || window.innerWidth < 480;
   }
 
   private showViewer(comment: Comment, pos: { x: number; y: number }): void {
