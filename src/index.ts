@@ -456,6 +456,11 @@ class PindropLayer {
     this.refreshUI();
   }
 
+  setComments(comments: Comment[]): void {
+    this.store.replaceAll(comments);
+    this.refreshUI();
+  }
+
   refresh(): void {
     this.refreshUI();
     this.updatePopoverPositions();
