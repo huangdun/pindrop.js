@@ -7,7 +7,7 @@ export class NamePrompt {
   constructor(private shadowContent: HTMLDivElement) { }
 
   private isMobile(): boolean {
-    return window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 480;
+    return (window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 768) || window.innerWidth < 480;
   }
 
   async prompt(storageKey: string): Promise<string | null> {

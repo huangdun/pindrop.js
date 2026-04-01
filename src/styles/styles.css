@@ -1148,7 +1148,7 @@
   to { opacity: 0; }
 }
 
-@media (pointer: coarse), (max-width: 480px) {
+@media (pointer: coarse) and (max-width: 767px), (max-width: 479px) {
   :host {
     --pindrop-text-lg: 19px;
     --pindrop-text-base: 16px;
