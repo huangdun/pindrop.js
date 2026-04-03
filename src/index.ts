@@ -62,7 +62,7 @@ class PindropLayer {
       this.currentUser = opts.user.name;
     } else {
       try {
-        const savedName = localStorage.getItem(`${this.options.storageKey}-name`);
+        const savedName = localStorage.getItem(`${this.options.storageKey}-user`);
         if (savedName) this.currentUser = savedName;
       } catch (e) {
         // Ignore storage errors

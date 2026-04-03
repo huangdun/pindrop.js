@@ -21,26 +21,39 @@ function buildStructuralPath(el: Element): string {
     }
 
     if (current.id) {
-      parts.unshift(`#${cssEscape(current.id)}`);
-      break;
+      const escaped = cssEscape(current.id);
+      if (document.querySelectorAll(`#${escaped}`).length === 1) {
+        parts.unshift(`#${escaped}`);
+        break;
+      }
+      // Duplicate id — don't trust it, fall through to structural path
     }
 
     const pindropId = current.getAttribute('data-pindrop-id');
     if (pindropId) {
-      parts.unshift(`[data-pindrop-id="${cssEscape(pindropId)}"]`);
-      break;
+      const sel = `[data-pindrop-id="${cssEscape(pindropId)}"]`;
+      if (document.querySelectorAll(sel).length === 1) {
+        parts.unshift(sel);
+        break;
+      }
     }
 
     const testId = current.getAttribute('data-testid');
     if (testId) {
-      parts.unshift(`[data-testid="${cssEscape(testId)}"]`);
-      break;
+      const sel = `[data-testid="${cssEscape(testId)}"]`;
+      if (document.querySelectorAll(sel).length === 1) {
+        parts.unshift(sel);
+        break;
+      }
     }
 
     const dataId = current.getAttribute('data-id');
     if (dataId) {
-      parts.unshift(`[data-id="${cssEscape(dataId)}"]`);
-      break;
+      const sel = `[data-id="${cssEscape(dataId)}"]`;
+      if (document.querySelectorAll(sel).length === 1) {
+        parts.unshift(sel);
+        break;
+      }
     }
 
     let part = current.tagName.toLowerCase();

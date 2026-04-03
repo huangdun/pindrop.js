@@ -48,8 +48,12 @@ export function isScopeActive(scope: CommentScope | undefined, hooks: ScopeHooks
 
 export function getCommentVisibility(comment: Comment, hooks: ScopeHooks): CommentVisibility {
   const scopeActive = isScopeActive(comment.scope, hooks);
-  const anchorEl = document.querySelector(comment.anchor.selector);
-  const anchorVisible = anchorEl ? isElementVisible(anchorEl) : true;
+  const allMatches = Array.from(document.querySelectorAll(comment.anchor.selector));
+  // Element gone from DOM entirely → use viewport fallback, keep visible
+  // Element exists but all hidden (e.g. inactive tab) → hide the pin
+  const anchorVisible = allMatches.length === 0
+    ? true
+    : allMatches.some(el => isElementVisible(el as HTMLElement));
 
   return {
     scopeActive,

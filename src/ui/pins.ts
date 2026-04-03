@@ -80,6 +80,7 @@ export class PinRenderer {
       const pin = this.pins.get(this.activeCommentId);
       if (pin) this.applyActiveStyle(pin, true);
     }
+    this.updatePinVisibility();
   }
 
   renderPin(comment: Comment, number: number): void {
