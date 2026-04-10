@@ -20,6 +20,9 @@ import { mergeComments } from './io/merge';
 import { detectTheme, applyTheme } from './styles/theme';
 import { PIN_COLOR, COMMENT_CURSOR, pinSvgHtml } from './styles/tokens';
 import { addSwipeToDismiss } from './ui/swipe';
+import { applyRevealAdapter } from './adapters/reveal';
+import { applyImpressAdapter } from './adapters/impress';
+import { applyShowerAdapter } from './adapters/shower';
 
 class PindropLayer {
   private events: EventEmitter;
@@ -47,6 +50,7 @@ class PindropLayer {
   private newCommentScope: CommentScope | undefined;
   private sidebarSide: 'left' | 'right' = 'right';
   private _dragWasPopoverOpen = false;
+  private adapterCleanups: Array<() => void> = [];
 
   constructor(opts: PindropOptions = {}) {
     this.options = {
@@ -56,6 +60,12 @@ class PindropLayer {
       storageKey: opts.storageKey ?? 'pindrop',
       ...opts,
     };
+
+    const refresh = () => this.refresh();
+    [applyRevealAdapter, applyImpressAdapter, applyShowerAdapter].forEach(apply => {
+      const cleanup = apply(this.options, refresh);
+      if (cleanup) this.adapterCleanups.push(cleanup);
+    });
 
     // Pre-set user if provided or saved in local storage
     if (opts.user?.name) {
@@ -314,6 +324,7 @@ class PindropLayer {
     this.pinRenderer.destroy();
     this.events.removeAll();
     destroyContainer(this.container);
+    this.adapterCleanups.forEach(fn => fn());
   }
 
   toggle(): void {
