@@ -2,7 +2,7 @@ import type { PindropOptions } from '../core/types';
 
 declare global {
   interface Window {
-    shower?: object;
+    shower?: EventTarget & { slides?: unknown[] };
   }
 }
 
@@ -43,9 +43,16 @@ export function applyShowerAdapter(options: PindropOptions, { refresh, hidePins 
     };
   }
 
-  // MutationObserver is more reliable than Shower's event API across versions
-  const observer = new MutationObserver(() => refresh());
-  observer.observe(container, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  // Shower @3 fires 'slidechange' on window.shower; fall back to MutationObserver
+  // for older versions that lack this event.
+  const shower = window.shower;
+  if (typeof shower.addEventListener === 'function') {
+    const onSlideChange = () => { hidePins(); refresh(); };
+    shower.addEventListener('slidechange', onSlideChange);
+    return () => shower.removeEventListener('slidechange', onSlideChange);
+  }
 
+  const observer = new MutationObserver(() => { hidePins(); refresh(); });
+  observer.observe(container, { subtree: true, attributes: true, attributeFilter: ['class'] });
   return () => observer.disconnect();
 }

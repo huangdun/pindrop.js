@@ -135,13 +135,56 @@
     .tips h3 { margin: 0 0 0.5rem; font-size: 0.9rem; color: #0070f3; }
     .tips ul { margin: 0; padding-left: 1.2rem; font-size: 0.85rem; color: #444; }
     .tips li { margin-bottom: 0.25rem; }
+
+    .framework-demos {
+      display: flex;
+      gap: 0.75rem;
+      margin: 1.5rem 0;
+      flex-wrap: wrap;
+    }
+    .demo-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      background: #fff;
+      text-decoration: none;
+      color: #1a1a1a;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: all 0.15s;
+    }
+    .demo-link:hover { border-color: #0070f3; color: #0070f3; background: #f0f7ff; }
+    .demo-link .badge-fw {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #f0f0f0;
+      color: #555;
+    }
   </style>
 </head>
 <body>
   <header>
     <h1 id="page-title">pindrop.js playground</h1>
     <p class="subtitle">Click the toolbar at the bottom to enter <strong>Comment</strong> mode.</p>
-    
+
+    <div class="framework-demos">
+      <a class="demo-link" href="reveal.html">
+        <span class="badge-fw">NEW</span> reveal.js
+      </a>
+      <a class="demo-link" href="impress.html">
+        <span class="badge-fw">NEW</span> impress.js
+      </a>
+      <a class="demo-link" href="shower.html">
+        <span class="badge-fw">NEW</span> Shower
+      </a>
+    </div>
+
     <div class="tabs-nav">
       <button class="tab-btn active" data-tab="tab-dashboard">Dashboard</button>
       <button class="tab-btn" data-tab="tab-details">Details</button>

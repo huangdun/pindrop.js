@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pindrop.js + Shower</title>
+  <link rel="stylesheet" href="https://unpkg.com/@shower/ribbon@4.0.0/styles/styles.css">
+  <style>
+    .back-link {
+      position: fixed;
+      top: 12px;
+      left: 16px;
+      font-size: 12px;
+      color: #444;
+      text-decoration: none;
+      z-index: 99999;
+      background: #fff;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      font-weight: 500;
+    }
+    .back-link:hover { color: #0070f3; border-color: #0070f3; }
+
+    .slide .stat-row { display: flex; gap: 1.5rem; margin-top: 1.5rem; }
+    .slide .stat-box { flex: 1; background: #f5f5f5; border-radius: 10px; padding: 1.2rem; text-align: center; }
+    .slide .stat-value { font-size: 2rem; font-weight: 700; color: #0070f3; }
+    .slide .stat-label { font-size: 0.75rem; color: #888; margin-top: 0.2rem; }
+
+    .slide .tag-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    .slide .tag { padding: 4px 12px; border-radius: 99px; font-size: 0.8rem; font-weight: 500; background: #e8f0fe; color: #1a73e8; }
+
+    .slide .note { color: #888; font-size: 0.9rem; margin-top: 1rem; }
+  </style>
+</head>
+<body class="shower list">
+  <a class="back-link" href="index.html">← Playground</a>
+
+  <header class="caption">
+    <h1>pindrop.js + Shower</h1>
+  </header>
+
+  <section class="slide" id="slide-intro">
+    <h2>pindrop.js with Shower</h2>
+    <p>Navigate with arrow keys. Enter comment mode with <strong>C</strong>.</p>
+    <p>Pins are automatically scoped per slide — no config needed.</p>
+  </section>
+
+  <section class="slide" id="slide-metrics">
+    <h2>Metrics</h2>
+    <p>Try pinning a comment on one of these numbers, then move to the next slide.</p>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-value">2,847</div>
+        <div class="stat-label">Active Users</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">94%</div>
+        <div class="stat-label">Satisfaction</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">$12.4k</div>
+        <div class="stat-label">Revenue</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" id="slide-how">
+    <h2>How it works</h2>
+    <p>Pindrop detects Shower via <code>window.shower</code> and listens to <code>slidechange</code>.</p>
+    <div class="tag-row">
+      <span class="tag">Auto-detected</span>
+      <span class="tag">slidechange event</span>
+      <span class="tag">.slide.active</span>
+      <span class="tag">Index-based scope</span>
+    </div>
+  </section>
+
+  <section class="slide" id="slide-end">
+    <h2>That's all</h2>
+    <p>Just <code>Pindrop.init()</code>. No hooks, no adapters, no config.</p>
+    <p class="note">Go back to the <a href="index.html">main playground</a> to test tabs and visibility.</p>
+  </section>
+
+  <script src="https://unpkg.com/@shower/core@3.1.0/dist/shower.js"></script>
+  <script type="module">
+    import { Pindrop } from '../src/index.ts';
+
+    Pindrop.init({ storageKey: 'playground-shower' });
+  </script>
+</body>
+</html>

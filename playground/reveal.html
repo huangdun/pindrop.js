@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pindrop.js + reveal.js</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/white.min.css">
+  <style>
+    .reveal h1, .reveal h2, .reveal h3 { text-transform: none; }
+    .back-link {
+      position: fixed;
+      top: 12px;
+      left: 16px;
+      font-size: 12px;
+      color: #444;
+      text-decoration: none;
+      z-index: 9999;
+      font-family: system-ui, sans-serif;
+      background: #fff;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      font-weight: 500;
+    }
+    .back-link:hover { color: #0070f3; border-color: #0070f3; }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .stat-box {
+      background: #f5f5f5;
+      border-radius: 10px;
+      padding: 1.2rem;
+      text-align: center;
+    }
+    .stat-value { font-size: 2rem; font-weight: 700; color: #0070f3; }
+    .stat-label { font-size: 0.8rem; color: #888; margin-top: 0.2rem; }
+    .feature-list { list-style: none; padding: 0; text-align: left; }
+    .feature-list li { padding: 0.5rem 0; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+    .feature-list li::before { content: "✓ "; color: #0070f3; font-weight: 700; }
+    .slide-subtitle { color: #666; }
+    .slide-hint { font-size: 0.75rem; color: #aaa; margin-top: 2rem; }
+    .slide-note { font-size: 0.8rem; color: #aaa; }
+    .slide-footer { font-size: 0.85rem; color: #888; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <a class="back-link" href="index.html">← Playground</a>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <section>
+        <h1>pindrop.js</h1>
+        <p class="slide-subtitle">with reveal.js — try commenting on any slide</p>
+        <p class="slide-hint">Navigate with arrow keys · Enter comment mode with <strong>C</strong></p>
+      </section>
+
+      <section>
+        <h2>Key Metrics</h2>
+        <p class="slide-subtitle">Pin a comment on any of these numbers.</p>
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-value">2,847</div>
+            <div class="stat-label">Active Users</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">94%</div>
+            <div class="stat-label">Satisfaction</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">$12.4k</div>
+            <div class="stat-label">Revenue</div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Features</h2>
+        <ul class="feature-list">
+          <li>Pins are scoped per slide automatically</li>
+          <li>Pins hide during slide transitions</li>
+          <li>Positions recompute after animation ends</li>
+          <li>Works with keyboard navigation</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Nested Slides</h2>
+        <p>This slide has vertical sub-slides. ↓</p>
+        <p class="slide-note">Pins on sub-slides are scoped to their vertical index too.</p>
+      </section>
+
+      <section>
+        <section>
+          <h3>Vertical Slide A</h3>
+          <p>Pin a comment here, then navigate to slide B. The pin should stay here.</p>
+        </section>
+        <section>
+          <h3>Vertical Slide B</h3>
+          <p>This is a different vertical slide. The pin from slide A should be hidden.</p>
+        </section>
+      </section>
+
+      <section>
+        <h2>That's it</h2>
+        <p>No extra config needed — pindrop auto-detected reveal.js.</p>
+        <p class="slide-footer">Just <code>Pindrop.init()</code> — nothing else.</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.js"></script>
+  <script type="module">
+    import { Pindrop } from '../src/index.ts';
+
+    Reveal.initialize({
+      hash: true,
+      transition: 'slide',
+      backgroundTransition: 'fade',
+    });
+
+    Pindrop.init({ storageKey: 'playground-reveal' });
+  </script>
+</body>
+</html>
