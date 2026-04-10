@@ -61,9 +61,12 @@ class PindropLayer {
       ...opts,
     };
 
-    const refresh = () => this.refresh();
+    const adapterCallbacks = {
+      refresh: () => this.refresh(),
+      hidePins: () => { this.container.pinContainer.style.visibility = 'hidden'; },
+    };
     [applyRevealAdapter, applyImpressAdapter, applyShowerAdapter].forEach(apply => {
-      const cleanup = apply(this.options, refresh);
+      const cleanup = apply(this.options, adapterCallbacks);
       if (cleanup) this.adapterCleanups.push(cleanup);
     });
 
@@ -1075,6 +1078,7 @@ class PindropLayer {
   private refreshUI(): void {
     const comments = this.getVisibleComments();
     this.pinRenderer.renderAll(comments);
+    this.container.pinContainer.style.visibility = '';
     this.sidebar.update(comments);
     this.toolbar.setCommentCount(comments.length);
 

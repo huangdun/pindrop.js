@@ -11,7 +11,12 @@ declare global {
  * impress.js moves steps via 3D CSS transforms — inactive steps are
  * off-screen but still in the DOM and not display:none.
  */
-export function applyImpressAdapter(options: PindropOptions, refresh: () => void): (() => void) | undefined {
+interface AdapterCallbacks {
+  refresh: () => void;
+  hidePins: () => void;
+}
+
+export function applyImpressAdapter(options: PindropOptions, { refresh, hidePins }: AdapterCallbacks): (() => void) | undefined {
   if (typeof window.impress !== 'function') return undefined;
 
   const container = document.querySelector('#impress');
@@ -43,7 +48,12 @@ export function applyImpressAdapter(options: PindropOptions, refresh: () => void
     };
   }
 
+  const onStepLeave = () => hidePins();
   const onStepEnter = () => refresh();
+  document.addEventListener('impress:stepleave', onStepLeave);
   document.addEventListener('impress:stepenter', onStepEnter);
-  return () => document.removeEventListener('impress:stepenter', onStepEnter);
+  return () => {
+    document.removeEventListener('impress:stepleave', onStepLeave);
+    document.removeEventListener('impress:stepenter', onStepEnter);
+  };
 }

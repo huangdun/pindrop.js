@@ -23,7 +23,12 @@ declare global {
  *
  * Returns a cleanup function to remove the slidechanged listener on destroy.
  */
-export function applyRevealAdapter(options: PindropOptions, refresh: () => void): (() => void) | undefined {
+interface AdapterCallbacks {
+  refresh: () => void;
+  hidePins: () => void;
+}
+
+export function applyRevealAdapter(options: PindropOptions, { refresh, hidePins }: AdapterCallbacks): (() => void) | undefined {
   const Reveal = window.Reveal;
   if (!Reveal) return undefined;
 
@@ -61,19 +66,20 @@ export function applyRevealAdapter(options: PindropOptions, refresh: () => void)
   }
 
   const onSlideChanged = () => {
-    // slidechanged fires at the start of the CSS transition. Wait for the
-    // incoming slide's transition to finish before recomputing pin positions,
-    // otherwise getBoundingClientRect returns mid-animation coordinates.
+    // Hide pins immediately so they don't ride along with the outgoing slide
+    // during the CSS transition.
+    hidePins();
+
     const incoming = document.querySelector('.reveal .slides section.present');
     if (incoming) {
-      const onTransitionEnd = () => {
-        incoming.removeEventListener('transitionend', onTransitionEnd);
+      const done = () => {
+        incoming.removeEventListener('transitionend', done);
         refresh();
       };
-      incoming.addEventListener('transitionend', onTransitionEnd);
-      // Fallback: if the transition never fires (e.g. transition:none), refresh anyway
+      incoming.addEventListener('transitionend', done);
+      // Fallback for transition:none or very short transitions
       setTimeout(() => {
-        incoming.removeEventListener('transitionend', onTransitionEnd);
+        incoming.removeEventListener('transitionend', done);
         refresh();
       }, 600);
     } else {

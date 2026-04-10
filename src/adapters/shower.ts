@@ -12,7 +12,12 @@ declare global {
  * MutationObserver to detect navigation since Shower's event API varies
  * between major versions.
  */
-export function applyShowerAdapter(options: PindropOptions, refresh: () => void): (() => void) | undefined {
+interface AdapterCallbacks {
+  refresh: () => void;
+  hidePins: () => void;
+}
+
+export function applyShowerAdapter(options: PindropOptions, { refresh, hidePins }: AdapterCallbacks): (() => void) | undefined {
   if (!window.shower) return undefined;
 
   const container = document.querySelector('.shower');
