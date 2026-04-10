@@ -60,7 +60,26 @@ export function applyRevealAdapter(options: PindropOptions, refresh: () => void)
     };
   }
 
-  const onSlideChanged = () => refresh();
+  const onSlideChanged = () => {
+    // slidechanged fires at the start of the CSS transition. Wait for the
+    // incoming slide's transition to finish before recomputing pin positions,
+    // otherwise getBoundingClientRect returns mid-animation coordinates.
+    const incoming = document.querySelector('.reveal .slides section.present');
+    if (incoming) {
+      const onTransitionEnd = () => {
+        incoming.removeEventListener('transitionend', onTransitionEnd);
+        refresh();
+      };
+      incoming.addEventListener('transitionend', onTransitionEnd);
+      // Fallback: if the transition never fires (e.g. transition:none), refresh anyway
+      setTimeout(() => {
+        incoming.removeEventListener('transitionend', onTransitionEnd);
+        refresh();
+      }, 600);
+    } else {
+      refresh();
+    }
+  };
   Reveal.on('slidechanged', onSlideChanged);
 
   return () => Reveal.off('slidechanged', onSlideChanged);
