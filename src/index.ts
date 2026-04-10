@@ -566,6 +566,13 @@ class PindropLayer {
     this.pinRenderer.setMode(mode);
     this.events.emit('mode:change', { mode });
 
+    // Re-render pins when entering comment mode so positions are recomputed
+    // after any slide transition that may have been in progress when the last
+    // slidechanged event fired.
+    if (mode === 'comment') {
+      this.refreshUI();
+    }
+
     // Clean up when leaving comment mode
     if (prev === 'comment' && mode !== 'comment') {
       this.clearHighlight();
