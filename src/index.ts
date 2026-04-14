@@ -676,8 +676,10 @@ class PindropLayer {
 
     // Expand the shadow host to full viewport so shadow DOM content is hit-testable
     // (A 0x0 host causes browsers to skip its shadow DOM during hit-testing)
-    this.container.root.style.width = '100vw';
-    this.container.root.style.height = '100vh';
+    // Use inset:0 instead of 100vw/100vh to avoid triggering scrollbars on pages with scrollbars
+    this.container.root.style.inset = '0';
+    this.container.root.style.width = '';
+    this.container.root.style.height = '';
     this.container.root.style.pointerEvents = 'none';
 
     const wrapper = document.createElement('div');
@@ -685,7 +687,7 @@ class PindropLayer {
 
     // Click-outside backdrop to dismiss the comment box
     const backdrop = document.createElement('div');
-    backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:auto;z-index:1;';
+    backdrop.style.cssText = 'position:fixed;inset:0;pointer-events:auto;z-index:1;';
     backdrop.addEventListener('click', () => this.dismissNewComment());
 
     // Large pin at click position
@@ -709,8 +711,7 @@ class PindropLayer {
     }
     if (boxLeft < 8) boxLeft = 8;
     box.style.left = `${boxLeft}px`;
-    const boxTop = Math.max(8, position.y - 32);
-    box.style.top = `${boxTop}px`;
+    box.style.top = `${Math.max(8, position.y - 32)}px`;
 
     // Input wrapper — textarea + send button inside
     const wrap = document.createElement('div');
@@ -725,12 +726,24 @@ class PindropLayer {
     btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>`;
     btn.disabled = true;
 
+    const adjustBoxTop = () => {
+      const pos = resolveAnchorPosition(anchor);
+      const currentY = pos.y - window.scrollY;
+      let boxTop = Math.max(8, currentY - 32);
+      const bh = box.offsetHeight;
+      if (bh > 0 && boxTop + bh + 8 > window.innerHeight) {
+        boxTop = Math.max(8, (currentY + 8) - bh);
+      }
+      box.style.top = `${boxTop}px`;
+    };
+
     textarea.addEventListener('input', () => {
       const hasContent = !!textarea.value.trim();
       btn.disabled = !hasContent;
       wrap.classList.toggle('has-content', hasContent);
       textarea.style.height = 'auto';
       textarea.style.height = hasContent ? `${textarea.scrollHeight}px` : '';
+      adjustBoxTop();
     });
 
     const save = () => {
@@ -779,6 +792,10 @@ class PindropLayer {
     box.appendChild(wrap);
     wrapper.append(backdrop, pin, box);
     this.container.shadowContent.appendChild(wrapper);
+
+    // Correct for bottom overflow now that the box has a measured height
+    adjustBoxTop();
+
     this.newCommentEl = wrapper;
     this.newCommentAnchor = anchor;
     this.newCommentScope = this.options.getScope?.(target);
@@ -830,8 +847,8 @@ class PindropLayer {
     // without the zero-sized wrapper.
     this.container.root.style.position = 'fixed';
     this.container.root.style.inset = '0';
-    this.container.root.style.width = '100vw';
-    this.container.root.style.height = '100vh';
+    this.container.root.style.width = '';
+    this.container.root.style.height = '';
     this.container.root.style.pointerEvents = 'none';
 
     // Pin at tap position (direct child of shadowContent)
@@ -1129,7 +1146,11 @@ class PindropLayer {
         let boxLeft = spaceRight > boxWidth + 8 ? pinRight + 8 : viewportX - 3 - boxWidth - 8;
         if (boxLeft < 8) boxLeft = 8;
         box.style.left = `${boxLeft}px`;
-        const boxTop = Math.max(8, viewportY - 32);
+        let boxTop = viewportY - 32;
+        const boxHeight = (box as HTMLElement).offsetHeight;
+        if (boxHeight > 0 && boxTop + boxHeight + 8 > window.innerHeight) {
+          boxTop = (viewportY + 8) - boxHeight;
+        }
         box.style.top = `${boxTop}px`;
       }
     }

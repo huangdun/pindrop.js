@@ -264,9 +264,6 @@ export class PinRenderer {
     let top = tailY - 32;
     if (top < 8) top = 8;
 
-    tip.style.setProperty('left', `${left}px`, 'important');
-    tip.style.setProperty('top', `${top}px`, 'important');
-
     tip.addEventListener('mouseenter', () => this.cancelTooltipHide());
     tip.addEventListener('mouseleave', () => this.scheduleTooltipHide());
     tip.addEventListener('click', () => {
@@ -274,8 +271,18 @@ export class PinRenderer {
       this.options.onPinClick(comment.id);
     });
 
-    // Append to document.body so it's outside the shadow DOM stacking context
+    // Append first so we can measure the rendered height for bottom overflow detection
     document.body.appendChild(tip);
+
+    const tipHeight = tip.offsetHeight;
+    const pinBottom = tailY + 8; // approximate bottom of pin marker
+    if (tipHeight > 0 && top + tipHeight + 8 > window.innerHeight) {
+      top = pinBottom - tipHeight;
+      if (top < 8) top = 8;
+    }
+
+    tip.style.setProperty('left', `${left}px`, 'important');
+    tip.style.setProperty('top', `${top}px`, 'important');
     this.tooltip = tip;
   }
 

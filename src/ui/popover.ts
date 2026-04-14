@@ -29,6 +29,7 @@ export class Popover {
   private activeRowMenu: HTMLDivElement | null = null;
   private menu: HTMLDivElement | null = null;
   private currentCommentId: string | null = null;
+  private currentPosition: { x: number; y: number } | null = null;
   private readOnly = false;
   private currentUser: string | null = null;
 
@@ -163,6 +164,7 @@ export class Popover {
         wrap.classList.toggle('has-content', hasContent);
         textarea.style.height = 'auto';
         textarea.style.height = hasContent ? `${textarea.scrollHeight}px` : '';
+        if (this.currentPosition) this.updatePosition(this.currentPosition);
       });
 
       const send = () => {
@@ -190,6 +192,8 @@ export class Popover {
     }
 
     this.shadowContent.appendChild(this.el);
+    // Re-run position now that the element has a measured height (handles bottom overflow)
+    this.updatePosition(position);
     this.el.focus();
   }
 
@@ -212,13 +216,14 @@ export class Popover {
 
   updatePosition(position: { x: number; y: number }): void {
     if (!this.el) return;
+    this.currentPosition = position;
     const pinRight = position.x + 33;
     const popoverWidth = 360;
     const spaceRight = window.innerWidth - pinRight;
     let left = spaceRight > popoverWidth + 8
       ? pinRight + 8
       : position.x - 3 - popoverWidth - 8;
-      
+
     let documentLeft = left + window.scrollX;
     if (documentLeft < 8) documentLeft = 8;
     left = documentLeft - window.scrollX;
@@ -226,6 +231,17 @@ export class Popover {
     let documentTop = position.y - 32 + window.scrollY;
     if (documentTop < 8) documentTop = 8;
     let top = documentTop - window.scrollY;
+
+    // If popover overflows the bottom of the viewport, align its bottom to the pin bottom instead
+    // Only when offsetHeight is available (element is in the DOM)
+    const popoverHeight = this.el.offsetHeight;
+    if (popoverHeight > 0) {
+      const pinBottom = position.y + 8;
+      if (top + popoverHeight + 8 > window.innerHeight) {
+        top = pinBottom - popoverHeight;
+        if (top < 8) top = 8;
+      }
+    }
 
     this.el.style.left = `${left}px`;
     this.el.style.top = `${top}px`;
